@@ -28,6 +28,7 @@
       padding: 16px;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      padding-bottom: 90px; /* room for the fixed order bar */
     }
 
     /* Header */
@@ -174,7 +175,24 @@
     .delivery-info { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #666; margin-bottom: 20px; }
 
     /* Bottom Action Bar */
-    .action-bar { display: flex; gap: 10px; align-items: center; margin-bottom: 24px; }
+    .action-bar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      max-width: 420px;
+      margin: 0 auto;
+      right: 0;
+      background: #fff;
+      padding: 12px 16px;
+      box-sizing: border-box;
+      border-top: 1px solid #eee;
+      box-shadow: 0 -4px 14px rgba(0,0,0,0.06);
+      z-index: 50;
+    }
     .price-box { flex: 1; border: 1px solid #6b21a8; border-radius: 8px; padding: 8px; text-align: center; }
     .current-price { font-size: 18px; font-weight: 700; color: #000; }
     .original-price { font-size: 11px; color: #888; text-decoration: line-through; margin-left: 4px; }
@@ -182,14 +200,6 @@
     .buy-btn:disabled { opacity: .6; cursor: default; }
 
     /* More options (other matching products) */
-    .more-options { border-top: 1px solid #eee; padding-top: 16px; }
-    .more-option-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; cursor: pointer; }
-    .more-option-row img { width: 44px; height: 44px; object-fit: cover; border-radius: 8px; background: #f0f0f0; }
-    .more-option-info { flex: 1; min-width: 0; }
-    .more-option-name { font-size: 12.5px; font-weight: 700; color: #111; }
-    .more-option-price { font-size: 11.5px; color: #666; }
-    .more-option-view { font-size: 11px; font-weight: 700; color: #6b21a8; }
-
     .empty-state { text-align: center; padding: 40px 10px; color: #666; font-size: 13px; }
 
     /* Fullscreen Modal (Lightbox) */
@@ -360,8 +370,6 @@
 
       const hasDiscount = product.mrp && Number(product.mrp) > Number(product.price);
 
-      const otherProducts = matched.filter((_, i) => i !== featuredIndex);
-
       document.getElementById("pageBody").innerHTML = `
 
         <div class="slider-container">
@@ -379,14 +387,14 @@
         <h2 class="section-title">${escapeHtml(product.productName || "Product")}</h2>
         <p style="font-size:12px;color:#666;margin:-8px 0 16px;">For ${escapeHtml(phoneLabel)}</p>
 
-        ${images.length > 1 ? `
+        ${matched.length > 1 ? `
           <h2 class="section-title">Cover Color</h2>
           <div class="color-options" id="colorOptions">
-            ${images.map((img, i) => `
-              <div class="color-card ${i === 0 ? "active" : ""}" data-index="${i}">
-                ${i === 0 ? `<div class="checkmark">✓</div>` : ""}
-                <img src="${escapeHtml(img)}" alt="Look ${i + 1}">
-                <span>Look ${i + 1}</span>
+            ${matched.map((p, i) => `
+              <div class="color-card ${i === featuredIndex ? "active" : ""}" data-switch-to="${i}">
+                ${i === featuredIndex ? `<div class="checkmark">✓</div>` : ""}
+                <img src="${escapeHtml(p.image || "")}" alt="${escapeHtml(p.productName || "")}">
+                <span>${escapeHtml((p.productName || "Option " + (i + 1)).split(" ").slice(0, 2).join(" "))}</span>
               </div>
             `).join("")}
           </div>
@@ -416,25 +424,6 @@
             PLACE ORDER NOW
           </button>
         </div>
-
-        ${otherProducts.length ? `
-          <div class="more-options">
-            <h2 class="section-title">More options</h2>
-            ${otherProducts.map(p => {
-              const idx = matched.indexOf(p);
-              return `
-                <div class="more-option-row" data-switch-to="${idx}">
-                  <img src="${escapeHtml(p.image || "")}" alt="">
-                  <div class="more-option-info">
-                    <div class="more-option-name">${escapeHtml(p.productName || "Product")}</div>
-                    <div class="more-option-price">₹${p.price ?? 0}</div>
-                  </div>
-                  <span class="more-option-view">View →</span>
-                </div>
-              `;
-            }).join("")}
-          </div>
-        ` : ""}
       `;
 
       lucide.createIcons();
@@ -461,20 +450,9 @@
           const card = e.target.closest(".color-card");
           if (!card) return;
 
-          selectedImageIndex = Number(card.dataset.index);
-
-          colorOptions.querySelectorAll(".color-card").forEach(c => {
-            c.classList.remove("active");
-            const chk = c.querySelector(".checkmark");
-            if (chk) chk.remove();
-          });
-          card.classList.add("active");
-          const checkmark = document.createElement("div");
-          checkmark.className = "checkmark";
-          checkmark.textContent = "✓";
-          card.appendChild(checkmark);
-
-          slider.scrollTo({ left: slider.clientWidth * selectedImageIndex, behavior: "smooth" });
+          featuredIndex = Number(card.dataset.switchTo);
+          renderFeatured();
+          window.scrollTo({ top: 0, behavior: "smooth" });
         });
       }
 
@@ -489,17 +467,9 @@
 
       document.getElementById("placeOrderBtn").addEventListener("click", () => {
         const params = new URLSearchParams({ productId: product.id, qty: String(qty) });
-        if (images.length > 1) params.set("colour", `Look ${selectedImageIndex + 1}`);
         window.location.href = `covercheckout.html?${params.toString()}`;
       });
 
-      document.querySelectorAll("[data-switch-to]").forEach(row => {
-        row.addEventListener("click", () => {
-          featuredIndex = Number(row.dataset.switchTo);
-          renderFeatured();
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        });
-      });
     }
 
     window.openModal = function (src) {
