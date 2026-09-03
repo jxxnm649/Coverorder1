@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product List</title>
+<style>
+  body { font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f4f6f8; display: flex; justify-content: center; }
+  .app-container { width: 100%; max-width: 414px; background: #ffffff; min-height: 100vh; position: relative; padding-bottom: 80px; }
+  
+  .header { display: flex; align-items: center; padding: 20px; }
+  .header h2 { margin: 0; font-size: 18px; margin-left: 20px; font-weight: 600; }
+  
+  /* Selection Summary Badge */
+  .selection-badge { margin: 0 20px 15px 20px; padding: 12px 15px; background: #f9f9f9; border-radius: 10px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+  .badge-left { display: flex; align-items: center; gap: 10px; }
+  .badge-left img { width: 35px; height: 35px; object-fit: cover; border-radius: 5px; }
+  .change-btn { color: #006b44; font-weight: bold; cursor: pointer; }
+
+  .title-section { padding: 0 20px 10px 20px; }
+  .title-section h1 { margin: 0; font-size: 20px; color: #111; font-weight: 700; }
+  .title-section p { margin: 3px 0 0 0; color: #666; font-size: 13px; }
+
+  /* Product Cards — vertical detail-card style */
+  .product-list { padding: 0 20px; }
+  .product-card { border: 1px solid #eee; border-radius: 14px; margin-bottom: 18px; background: #fff; position: relative; overflow: hidden; }
+  .product-img { width: 100%; height: 210px; object-fit: cover; background: #f0f0f0; display: block; }
+  .product-details { padding: 14px; }
+  .product-details h4 { margin: 0; font-size: 16px; color: #111; font-weight: 700; }
+  .product-details p { margin: 2px 0 8px 0; font-size: 12px; color: #666; }
+  .price-row { display: none; }
+  .current-price { font-size: 18px; font-weight: bold; color: #111; }
+  .old-price { font-size: 13px; color: #999; text-decoration: line-through; }
+  .discount { font-size: 11px; background: #e6f4ea; color: #006b44; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+
+  .swatch-label { font-size: 13px; font-weight: 700; color: #111; margin: 0 0 8px; }
+  .swatch-row { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .swatch { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
+  .swatch-thumb { width: 52px; height: 52px; border-radius: 10px; border: 2px solid #eee; overflow: hidden; position: relative; }
+  .swatch-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .swatch.selected .swatch-thumb { border-color: #006b44; }
+  .swatch.selected .swatch-thumb::after { content: '✓'; position: absolute; top: 2px; right: 2px; background: #006b44; color: #fff; width: 16px; height: 16px; border-radius: 50%; font-size: 10px; display: flex; align-items: center; justify-content: center; }
+  .swatch-name { font-size: 10px; color: #666; font-weight: 600; }
+
+  .qty-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .qty-label { font-size: 13px; font-weight: 700; color: #111; }
+  .qty-stepper { display: flex; align-items: center; border: 1.5px solid #006b44; border-radius: 8px; overflow: hidden; }
+  .qty-btn { background: #fff; border: none; color: #006b44; width: 34px; height: 34px; font-size: 18px; font-weight: bold; cursor: pointer; }
+  .qty-value { width: 34px; text-align: center; font-size: 14px; font-weight: 700; color: #111; }
+
+  /* Bottom price + order bar (per card) */
+  .order-bar { display: flex; align-items: stretch; gap: 10px; }
+  .price-box { border: 1.5px solid #006b44; border-radius: 8px; padding: 10px 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 84px; }
+  .price-box .current-price { font-size: 16px; margin: 0; }
+  .price-box .old-price { font-size: 11px; margin: 0; }
+  .btn-order { background: #006b44; color: white; border: none; padding: 13px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .fav-icon { position: absolute; top: 12px; right: 12px; font-size: 20px; color: #fff; cursor: pointer; text-shadow: 0 1px 3px rgba(0,0,0,.5); z-index: 2; }
+  .fav-icon.liked { color: #e0245e; }
+
+  .bottom-bar { position: fixed; bottom: 0; width: 100%; max-width: 414px; background: #fff; padding: 15px 20px; box-sizing: border-box; border-top: 1px solid #eee; }
+  .btn-next { background: #006b44; color: white; border: none; padding: 16px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; text-align: center; }
+</style>
+</head>
+<body>
+<div class="app-container">
+  <div class="header">
+    <a href="#" id="backLink" style="font-size: 20px;text-decoration:none;color:inherit;">&#8592;</a><h2>Products Found</h2>
+  </div>
+
+  <div class="selection-badge">
+    <div class="badge-left">
+      <div style="background:#222; color:#fff; width:35px; height:35px; border-radius:6px; display:flex; align-items:center; justify-content:center;">📱</div>
+      <div>
+        <div style="font-weight:bold; color:#111;" id="badgeModel"></div>
+        <div style="font-size:11px; color:#666;" id="badgeType"></div>
+      </div>
+    </div>
+    <a href="#" id="changeLink" class="change-btn" style="text-decoration:none;">Change</a>
+  </div>
+
+  <div class="title-section">
+    <h1 id="listTitle">Best products for you</h1>
+    <p id="listSub"></p>
+  </div>
+
+  <div class="product-list" id="productList">
+    <p style="color:#666;font-size:13px;">Loading…</p>
+  </div>
+
+</div>
+
+<script type="module">
+  import { db } from "./firebase.js";
+  import { collection, getDocs } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
+  const CATEGORY_KEYWORDS = {
+    "Covers":           ["cover", "case"],
+    "Tempered Glass":   ["tempered", "screen guard", "screen protector"],
+    "Camera Glass":     ["camera glass", "camera lens", "camera protector"],
+    "Unique Products":  ["unique"],
+    "Mobile Battery":   ["battery"],
+    "Customized Cover": ["customized", "custom cover", "customised"]
+  };
+
+  const brand = sessionStorage.getItem("cover_brand");
+  const model = sessionStorage.getItem("cover_model");
+  const category = sessionStorage.getItem("cover_category");
+  const type = sessionStorage.getItem("cover_type"); // only set when category === "Covers"
+  if (!brand || !model || !category) window.location.href = "coverbrand.html";
+
+  const backTarget = category === "Covers" ? "covertype.html" : "covercategory.html";
+  document.getElementById("backLink").href = backTarget;
+  document.getElementById("changeLink").href = backTarget;
+
+  const phoneLabel = `${brand} ${model}`;
+  document.getElementById("badgeModel").textContent = phoneLabel;
+  document.getElementById("badgeType").textContent = type ? `${category} • ${type}` : category;
+  document.getElementById("listTitle").textContent = `Best ${category.toLowerCase()} for your ${phoneLabel}`;
+
+  function escapeHtml(str) {
+    return String(str ?? "").replace(/[&<>"']/g, m => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    })[m]);
+  }
+
+  async function load() {
+    const listEl = document.getElementById("productList");
+
+    let categoryProducts = [];
+    try {
+      const snap = await getDocs(collection(db, "products"));
+      const keywords = CATEGORY_KEYWORDS[category] || [];
+      categoryProducts = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(p => {
+          const c = (p.category || "").toLowerCase();
+          return keywords.some(k => c.includes(k));
+        });
+    } catch (error) {
+      console.error(error);
+    }
+
+    let matched = categoryProducts;
+    let usedFallback = false;
+
+    // Only "Covers" has a narrower Type filter to apply.
+    if (category === "Covers" && type) {
+      const TYPE_KEYWORDS = { "Flip Cover": "flip", "Bumper Case": "bumper", "Silicone Case": "silicone", "Leather Case": "leather" };
+      const OTHER_KEYWORDS = Object.values(TYPE_KEYWORDS);
+
+      if (TYPE_KEYWORDS[type]) {
+        matched = categoryProducts.filter(p => (p.productName || "").toLowerCase().includes(TYPE_KEYWORDS[type]));
+      } else {
+        // "Back Cover" — catch-all: not specifically another type.
+        matched = categoryProducts.filter(p => {
+          const name = (p.productName || "").toLowerCase();
+          return !OTHER_KEYWORDS.some(k => name.includes(k));
+        });
+      }
+
+      if (!matched.length && categoryProducts.length) {
+        matched = categoryProducts;
+        usedFallback = true;
+      }
+    }
+
+    document.getElementById("listSub").textContent =
+      usedFallback
+        ? `${matched.length} product${matched.length === 1 ? "" : "s"} found (showing all ${category.toLowerCase()})`
+        : `${matched.length} product${matched.length === 1 ? "" : "s"} found`;
+
+    if (!matched.length) {
+      listEl.innerHTML = `<p style="color:#666;font-size:13px;">No products in this category right now — please check back soon.</p>`;
+      return;
+    }
+
+    listEl.innerHTML = matched.map(p => {
+      const hasDiscount = p.mrp && Number(p.mrp) > Number(p.price);
+      const offPct = hasDiscount ? Math.round((1 - Number(p.price) / Number(p.mrp)) * 100) : 0;
+      const images = Array.isArray(p.images) && p.images.length ? p.images : [p.image].filter(Boolean);
+
+      const swatchRow = images.length > 1
+        ? `
+          <div class="swatch-label">Cover Color</div>
+          <div class="swatch-row" data-swatch-for="${p.id}">
+            ${images.map((img, i) => `
+              <div class="swatch ${i === 0 ? "selected" : ""}" data-index="${i}">
+                <div class="swatch-thumb"><img src="${escapeHtml(img)}"></div>
+                <span class="swatch-name">Look ${i + 1}</span>
+              </div>
+            `).join("")}
+          </div>
+        `
+        : "";
+
+      return `
+        <div class="product-card" data-id="${p.id}" data-selected-index="0">
+          <div class="fav-icon" data-fav="${p.id}">&#9825;</div>
+          <img src="${escapeHtml(images[0] || "")}" class="product-img" data-main-img>
+
+          <div class="product-details">
+            <h4>${escapeHtml(p.productName || "Product")}</h4>
+            <p>For ${escapeHtml(phoneLabel)}</p>
+
+            ${swatchRow}
+
+            <div class="qty-row">
+              <span class="qty-label">Quantity</span>
+              <div class="qty-stepper">
+                <button type="button" class="qty-btn qty-minus">&minus;</button>
+                <span class="qty-value">1</span>
+                <button type="button" class="qty-btn qty-plus">+</button>
+              </div>
+            </div>
+
+            <div class="order-bar">
+              <div class="price-box">
+                <span class="current-price">₹${p.price ?? 0}</span>
+                ${hasDiscount ? `<span class="old-price">₹${p.mrp}</span>` : ""}
+              </div>
+              <button class="btn-order" data-id="${p.id}">⚡ Place Order Now</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+  load();
+
+  document.getElementById("productList").addEventListener("click", (e) => {
+
+    // Swatch tap — swap the hero image + remember which look was picked.
+    const swatch = e.target.closest(".swatch");
+    if (swatch) {
+      const card = swatch.closest(".product-card");
+      card.dataset.selectedIndex = swatch.dataset.index;
+      card.querySelectorAll(".swatch").forEach(s => s.classList.remove("selected"));
+      swatch.classList.add("selected");
+      card.querySelector("[data-main-img]").src = swatch.querySelector(".swatch-thumb img").src;
+      return;
+    }
+
+    // Like / wishlist heart
+    const fav = e.target.closest(".fav-icon");
+    if (fav) {
+      fav.classList.toggle("liked");
+      fav.innerHTML = fav.classList.contains("liked") ? "&#10084;" : "&#9825;";
+      return;
+    }
+
+    // Quantity stepper
+    const qtyBtn = e.target.closest(".qty-btn");
+    if (qtyBtn) {
+      const valueEl = qtyBtn.parentElement.querySelector(".qty-value");
+      let qty = Number(valueEl.textContent);
+      if (qtyBtn.classList.contains("qty-plus")) qty = Math.min(qty + 1, 10);
+      if (qtyBtn.classList.contains("qty-minus")) qty = Math.max(qty - 1, 1);
+      valueEl.textContent = qty;
+      return;
+    }
+
+    // Place Order Now
+    const btn = e.target.closest(".btn-order");
+    if (btn) {
+      const card = btn.closest(".product-card");
+      const qty = Number(card.querySelector(".qty-value").textContent) || 1;
+      const selectedIndex = Number(card.dataset.selectedIndex) || 0;
+
+      const params = new URLSearchParams({ productId: btn.dataset.id, qty: String(qty) });
+      const swatchImgs = card.querySelectorAll(".swatch");
+      if (swatchImgs.length) {
+        params.set("colour", `Look ${selectedIndex + 1}`);
+      }
+      window.location.href = `covercheckout.html?${params.toString()}`;
+    }
+  });
+</script>
+</body>
+</html>
