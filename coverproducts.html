@@ -387,16 +387,25 @@
         <h2 class="section-title">${escapeHtml(product.productName || "Product")}</h2>
         <p style="font-size:12px;color:#666;margin:-8px 0 16px;">For ${escapeHtml(phoneLabel)}</p>
 
-        ${matched.length > 1 ? `
+        ${(images.length > 1 || matched.length > 1) ? `
           <h2 class="section-title">Cover Color</h2>
           <div class="color-options" id="colorOptions">
-            ${matched.map((p, i) => `
-              <div class="color-card ${i === featuredIndex ? "active" : ""}" data-switch-to="${i}">
-                ${i === featuredIndex ? `<div class="checkmark">✓</div>` : ""}
-                <img src="${escapeHtml(p.image || "")}" alt="${escapeHtml(p.productName || "")}">
-                <span>${escapeHtml((p.productName || "Option " + (i + 1)).split(" ").slice(0, 2).join(" "))}</span>
+            ${images.map((img, i) => `
+              <div class="color-card ${i === 0 ? "active" : ""}" data-photo-index="${i}">
+                ${i === 0 ? `<div class="checkmark">✓</div>` : ""}
+                <img src="${escapeHtml(img)}" alt="Look ${i + 1}">
+                <span>Look ${i + 1}</span>
               </div>
             `).join("")}
+            ${matched.filter((_, i) => i !== featuredIndex).map(p => {
+              const idx = matched.indexOf(p);
+              return `
+                <div class="color-card" data-switch-to="${idx}">
+                  <img src="${escapeHtml(p.image || "")}" alt="${escapeHtml(p.productName || "")}">
+                  <span>${escapeHtml((p.productName || "Option").split(" ").slice(0, 2).join(" "))}</span>
+                </div>
+              `;
+            }).join("")}
           </div>
         ` : ""}
 
@@ -450,9 +459,28 @@
           const card = e.target.closest(".color-card");
           if (!card) return;
 
-          featuredIndex = Number(card.dataset.switchTo);
-          renderFeatured();
-          window.scrollTo({ top: 0, behavior: "smooth" });
+          if (card.dataset.switchTo !== undefined) {
+            featuredIndex = Number(card.dataset.switchTo);
+            renderFeatured();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            return;
+          }
+
+          // Photo swatch — just scroll the slider to that angle, same product.
+          selectedImageIndex = Number(card.dataset.photoIndex);
+
+          colorOptions.querySelectorAll("[data-photo-index]").forEach(c => {
+            c.classList.remove("active");
+            const chk = c.querySelector(".checkmark");
+            if (chk) chk.remove();
+          });
+          card.classList.add("active");
+          const checkmark = document.createElement("div");
+          checkmark.className = "checkmark";
+          checkmark.textContent = "✓";
+          card.appendChild(checkmark);
+
+          slider.scrollTo({ left: slider.clientWidth * selectedImageIndex, behavior: "smooth" });
         });
       }
 
