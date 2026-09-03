@@ -86,6 +86,7 @@
       scroll-snap-type: x mandatory;
       scroll-behavior: smooth;
       -webkit-overflow-scrolling: touch;
+      touch-action: pan-x;
       border-radius: 16px;
     }
 
@@ -100,16 +101,10 @@
     }
 
     .slide img {
-      width: 220px;
-      height: 300px;
+      width: 100%;
+      height: 320px;
       object-fit: cover;
-      border-radius: 16px;
       cursor: pointer;
-      transition: transform 0.2s;
-    }
-
-    .slide img:hover {
-      transform: scale(1.02);
     }
 
     /* Slider Dots Indicator */
@@ -388,10 +383,10 @@
         <p style="font-size:12px;color:#666;margin:-8px 0 16px;">For ${escapeHtml(phoneLabel)}</p>
 
         ${(images.length > 1 || matched.length > 1) ? `
-          <h2 class="section-title">Cover Color</h2>
+          <h2 class="section-title">Cover Color <span id="selectedColourLabel" style="font-weight:400;color:#888;font-size:13px;">— Look 1</span></h2>
           <div class="color-options" id="colorOptions">
             ${images.map((img, i) => `
-              <div class="color-card ${i === 0 ? "active" : ""}" data-photo-index="${i}">
+              <div class="color-card ${i === 0 ? "active" : ""}" data-photo-index="${i}" data-name="Look ${i + 1}">
                 ${i === 0 ? `<div class="checkmark">✓</div>` : ""}
                 <img src="${escapeHtml(img)}" alt="Look ${i + 1}">
                 <span>Look ${i + 1}</span>
@@ -399,10 +394,11 @@
             `).join("")}
             ${matched.filter((_, i) => i !== featuredIndex).map(p => {
               const idx = matched.indexOf(p);
+              const shortName = (p.productName || "Option").split(" ").slice(0, 2).join(" ");
               return `
-                <div class="color-card" data-switch-to="${idx}">
+                <div class="color-card" data-switch-to="${idx}" data-name="${escapeHtml(shortName)}">
                   <img src="${escapeHtml(p.image || "")}" alt="${escapeHtml(p.productName || "")}">
-                  <span>${escapeHtml((p.productName || "Option").split(" ").slice(0, 2).join(" "))}</span>
+                  <span>${escapeHtml(shortName)}</span>
                 </div>
               `;
             }).join("")}
@@ -458,6 +454,9 @@
         colorOptions.addEventListener("click", (e) => {
           const card = e.target.closest(".color-card");
           if (!card) return;
+
+          const label = document.getElementById("selectedColourLabel");
+          if (label) label.textContent = `— ${card.dataset.name}`;
 
           if (card.dataset.switchTo !== undefined) {
             featuredIndex = Number(card.dataset.switchTo);
