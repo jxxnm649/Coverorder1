@@ -1,346 +1,548 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="kn">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Product List</title>
-<style>
-  body { font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f4f6f8; display: flex; justify-content: center; }
-  .app-container { width: 100%; max-width: 414px; background: #ffffff; min-height: 100vh; position: relative; padding-bottom: 90px; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bestify - Product Page</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
 
-  .header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #f0f0f0; }
-  .header-left { display: flex; align-items: center; gap: 12px; }
-  .back-circle { width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid #eee; display: flex; align-items: center; justify-content: center; text-decoration: none; color: #6A1B9A; font-size: 18px; flex-shrink: 0; }
-  .brand-block h2 { margin: 0; font-size: 18px; font-weight: 800; color: #111; }
-  .brand-block p { margin: 0; font-size: 10px; color: #888; }
-  .header-actions { display: flex; align-items: center; gap: 14px; }
-  .header-action { display: flex; flex-direction: column; align-items: center; gap: 2px; color: #6A1B9A; font-size: 18px; background: none; border: none; cursor: pointer; }
-  .header-action span.label { font-size: 9px; color: #666; font-weight: 600; }
-  .header-badge { background: #6A1B9A; color: #fff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+    body {
+      background-color: #f8f9fa;
+      display: flex;
+      justify-content: center;
+      padding: 10px;
+      padding-bottom: 30px;
+    }
 
-  /* Selection Summary Badge */
-  .selection-badge { margin: 15px 20px; padding: 12px 15px; background: #f9f9f9; border-radius: 10px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
-  .badge-left { display: flex; align-items: center; gap: 10px; }
-  .badge-left img { width: 35px; height: 35px; object-fit: cover; border-radius: 5px; }
-  .change-btn { color: #6A1B9A; font-weight: bold; cursor: pointer; }
+    .container {
+      width: 100%;
+      max-width: 420px;
+      background: #ffffff;
+      padding: 16px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
 
-  .title-section { padding: 0 20px 10px 20px; }
-  .title-section h1 { margin: 0; font-size: 20px; color: #111; font-weight: 700; }
-  .title-section p { margin: 3px 0 0 0; color: #666; font-size: 13px; }
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
 
-  /* Product Cards — vertical detail-card style */
-  .product-list { padding: 0 20px; }
-  .product-card { border-radius: 14px; margin-bottom: 28px; background: #fff; position: relative; overflow: hidden; }
-  .product-card + .product-card { border-top: 1px solid #eee; padding-top: 24px; }
-  .product-img { width: 100%; height: 320px; object-fit: cover; background: #f0f0f0; display: block; border-radius: 14px; }
-  .product-details { padding: 14px 2px; }
-  .product-details h4 { margin: 0; font-size: 16px; color: #111; font-weight: 700; }
-  .product-details p { margin: 2px 0 8px 0; font-size: 12px; color: #666; }
-  .price-row { display: none; }
-  .current-price { font-size: 18px; font-weight: bold; color: #111; }
-  .old-price { font-size: 13px; color: #999; text-decoration: line-through; }
-  .discount { font-size: 11px; background: #f2e9f8; color: #6A1B9A; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+    .header-left { display: flex; align-items: center; gap: 12px; }
 
-  .swatch-label { font-size: 16px; font-weight: 800; color: #111; margin: 14px 0 10px; }
-  .swatch-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
-  .swatch { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; }
-  .swatch-thumb { width: 60px; height: 60px; border-radius: 12px; border: 2px solid #eee; overflow: hidden; position: relative; }
-  .swatch-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .swatch.selected .swatch-thumb { border-color: #6A1B9A; }
-  .swatch.selected .swatch-thumb::after { content: '✓'; position: absolute; top: 2px; right: 2px; background: #6A1B9A; color: #fff; width: 18px; height: 18px; border-radius: 50%; font-size: 11px; display: flex; align-items: center; justify-content: center; }
-  .swatch-name { font-size: 11px; color: #333; font-weight: 700; }
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+    }
 
-  .qty-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-  .qty-label { font-size: 16px; font-weight: 800; color: #111; }
-  .qty-stepper { display: flex; align-items: center; border: 1.5px solid #6A1B9A; border-radius: 8px; overflow: hidden; }
-  .qty-btn { background: #fff; border: none; color: #6A1B9A; width: 36px; height: 36px; font-size: 18px; font-weight: bold; cursor: pointer; }
-  .qty-value { width: 34px; text-align: center; font-size: 14px; font-weight: 700; color: #111; }
+    .brand-title h1 { font-size: 18px; font-weight: 700; color: #000; }
+    .brand-title p { font-size: 11px; color: #666; }
 
-  .delivery-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #555; padding: 10px 0; border-top: 1px solid #f0f0f0; margin-top: 6px; }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .action-icon { display: flex; flex-direction: column; align-items: center; font-size: 10px; color: #333; cursor: pointer; background: none; border: none; }
+    .action-icon.liked { color: #e0245e; }
 
-  /* Bottom price + order bar (per card) */
-  .order-bar { display: flex; align-items: stretch; gap: 12px; margin-top: 10px; }
-  .price-box { border: 1.5px solid #6A1B9A; border-radius: 8px; padding: 10px 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 100px; }
-  .price-box .current-price { font-size: 18px; margin: 0; }
-  .price-box .old-price { font-size: 12px; margin: 0; }
-  .btn-order { background: #6A1B9A; color: white; border: none; padding: 14px; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; }
-  .fav-icon { position: absolute; top: 12px; right: 12px; font-size: 20px; color: #fff; cursor: pointer; text-shadow: 0 1px 3px rgba(0,0,0,.5); z-index: 2; }
-  .fav-icon.liked { color: #e0245e; }
+    .avatar-badge {
+      width: 32px; height: 32px; background-color: #581c87; color: white;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-weight: bold; font-size: 12px;
+    }
 
-  .bottom-bar { display: none; }
-  .btn-next { background: #6A1B9A; color: white; border: none; padding: 16px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; text-align: center; }
-</style>
+    /* Selection breadcrumb */
+    .selection-badge { margin: 0 0 16px; padding: 10px 12px; background: #f9f9f9; border-radius: 10px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
+    .change-btn { color: #6b21a8; font-weight: bold; cursor: pointer; text-decoration: none; }
+
+    /* Image Slider Container */
+    .slider-container {
+      position: relative;
+      width: 100%;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .slider-wrapper {
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 16px;
+    }
+
+    .slider-wrapper::-webkit-scrollbar { display: none; }
+
+    .slide {
+      min-width: 100%;
+      scroll-snap-align: start;
+      display: flex;
+      justify-content: center;
+      background: #f0f0f0;
+    }
+
+    .slide img {
+      width: 220px;
+      height: 300px;
+      object-fit: cover;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .slide img:hover {
+      transform: scale(1.02);
+    }
+
+    /* Slider Dots Indicator */
+    .slider-dots {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 20px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      background-color: #cbd5e1;
+      border-radius: 50%;
+      transition: background-color 0.3s;
+    }
+
+    .dot.active {
+      background-color: #6b21a8;
+      width: 20px;
+      border-radius: 4px;
+    }
+
+    /* Color Selector */
+    .section-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; color: #111; }
+
+    .color-options {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+
+    .color-card {
+      min-width: 68px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 8px 4px;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .color-card.active { border: 2px solid #6b21a8; }
+    .color-card img { width: 44px; height: 60px; object-fit: cover; border-radius: 6px; margin-bottom: 6px; }
+    .color-card span { display: block; font-size: 11px; font-weight: 600; color: #333; }
+
+    .checkmark {
+      position: absolute; top: -6px; right: -6px; background: #6b21a8;
+      color: white; border-radius: 50%; width: 18px; height: 18px;
+      display: flex; align-items: center; justify-content: center; font-size: 10px;
+    }
+
+    /* Quantity Controls */
+    .quantity-container { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .quantity-selector { display: flex; align-items: center; border: 1px solid #6b21a8; border-radius: 8px; overflow: hidden; }
+    .quantity-btn { width: 40px; height: 36px; border: none; background: transparent; font-size: 18px; cursor: pointer; color: #6b21a8; }
+    .quantity-value { width: 40px; text-align: center; font-weight: 600; font-size: 14px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; line-height: 36px; }
+
+    /* Delivery Info */
+    .delivery-info { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #666; margin-bottom: 20px; }
+
+    /* Bottom Action Bar */
+    .action-bar { display: flex; gap: 10px; align-items: center; margin-bottom: 24px; }
+    .price-box { flex: 1; border: 1px solid #6b21a8; border-radius: 8px; padding: 8px; text-align: center; }
+    .current-price { font-size: 18px; font-weight: 700; color: #000; }
+    .original-price { font-size: 11px; color: #888; text-decoration: line-through; margin-left: 4px; }
+    .buy-btn { flex: 1.5; background-color: #6b21a8; color: white; border: none; border-radius: 8px; padding: 12px; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; }
+    .buy-btn:disabled { opacity: .6; cursor: default; }
+
+    /* More options (other matching products) */
+    .more-options { border-top: 1px solid #eee; padding-top: 16px; }
+    .more-option-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; cursor: pointer; }
+    .more-option-row img { width: 44px; height: 44px; object-fit: cover; border-radius: 8px; background: #f0f0f0; }
+    .more-option-info { flex: 1; min-width: 0; }
+    .more-option-name { font-size: 12.5px; font-weight: 700; color: #111; }
+    .more-option-price { font-size: 11.5px; color: #666; }
+    .more-option-view { font-size: 11px; font-weight: 700; color: #6b21a8; }
+
+    .empty-state { text-align: center; padding: 40px 10px; color: #666; font-size: 13px; }
+
+    /* Fullscreen Modal (Lightbox) */
+    .image-modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.9);
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+    }
+
+    .image-modal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      max-width: 90%;
+      max-height: 80%;
+      border-radius: 12px;
+      object-fit: contain;
+    }
+
+    .close-modal {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      color: white;
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-<div class="app-container">
-  <div class="header">
-    <div class="header-left">
-      <a href="#" id="backLink" class="back-circle">&#8592;</a>
-      <div class="brand-block">
-        <h2>Bestify</h2>
-        <p>Best Quality | Best Price</p>
+
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <a class="icon-btn" id="backLink" href="#"><i data-lucide="arrow-left" size="18"></i></a>
+        <div class="brand-title">
+          <h1>Bestify</h1>
+          <p>Best Quality | Best Price</p>
+        </div>
       </div>
-    </div>
-    <div class="header-actions">
-      <button type="button" class="header-action" id="headerLikeBtn">
-        <span>&#9825;</span><span class="label">Like</span>
-      </button>
-      <button type="button" class="header-action" id="headerShareBtn">
-        <span>&#10148;</span><span class="label">Share</span>
-      </button>
-      <div class="header-badge" id="cartBadge">0</div>
-    </div>
-  </div>
-
-  <div class="selection-badge">
-    <div class="badge-left">
-      <div style="background:#222; color:#fff; width:35px; height:35px; border-radius:6px; display:flex; align-items:center; justify-content:center;">📱</div>
-      <div>
-        <div style="font-weight:bold; color:#111;" id="badgeModel"></div>
-        <div style="font-size:11px; color:#666;" id="badgeType"></div>
+      <div class="header-right">
+        <button class="action-icon" id="likeBtn"><i data-lucide="heart" size="18"></i><span>Like</span></button>
+        <button class="action-icon" id="shareBtn"><i data-lucide="send" size="18"></i><span>Share</span></button>
+        <div class="avatar-badge" id="cartBadge">0</div>
       </div>
+    </header>
+
+    <div class="selection-badge">
+      <span id="badgeText"></span>
+      <a href="#" id="changeLink" class="change-btn">Change</a>
     </div>
-    <a href="#" id="changeLink" class="change-btn" style="text-decoration:none;">Change</a>
+
+    <div id="pageBody">
+      <p class="empty-state">Loading products…</p>
+    </div>
+
   </div>
 
-  <div class="title-section">
-    <h1 id="listTitle">Best products for you</h1>
-    <p id="listSub"></p>
+  <!-- Fullscreen Modal View -->
+  <div class="image-modal" id="imageModal" onclick="if(event.target===this) closeModal()">
+    <button class="close-modal" onclick="closeModal()"><i data-lucide="x" size="24"></i></button>
+    <img class="modal-content" id="modalImg" src="" alt="Full View">
   </div>
 
-  <div class="product-list" id="productList">
-    <p style="color:#666;font-size:13px;">Loading…</p>
-  </div>
+  <script type="module">
+    import { auth, db } from "./firebase.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+    import { collection, getDocs } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-</div>
-
-<script type="module">
-  import { auth, db } from "./firebase.js";
-  import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-  import { collection, getDocs } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
-
-  // Real cart count badge (top-right), matching whatever's actually
-  // in the signed-in user's cart.
-  onAuthStateChanged(auth, async (user) => {
-    if (!user) return;
-    try {
-      const snap = await getDocs(collection(db, "users", user.uid, "cart"));
-      document.getElementById("cartBadge").textContent = snap.size;
-    } catch (error) {
-      console.error(error);
-    }
-  });
-
-  document.getElementById("headerShareBtn").addEventListener("click", async () => {
-    const shareData = {
-      title: "Bestify",
-      text: `Check out covers for ${sessionStorage.getItem("cover_brand") || ""} ${sessionStorage.getItem("cover_model") || ""} on Bestify`,
-      url: window.location.href
+    const CATEGORY_KEYWORDS = {
+      "Covers":           ["cover", "case"],
+      "Tempered Glass":   ["tempered", "screen guard", "screen protector"],
+      "Camera Glass":     ["camera glass", "camera lens", "camera protector"],
+      "Unique Products":  ["unique"],
+      "Mobile Battery":   ["battery"],
+      "Customized Cover": ["customized", "custom cover", "customised"]
     };
-    try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else {
-        await navigator.clipboard.writeText(shareData.url);
-        alert("Link copied!");
-      }
-    } catch (error) {
-      // User cancelled the share sheet — nothing to do.
-    }
-  });
 
-  document.getElementById("headerLikeBtn").addEventListener("click", function () {
-    this.classList.toggle("liked-header");
-    const heart = this.querySelector("span");
-    heart.innerHTML = this.classList.contains("liked-header") ? "&#10084;" : "&#9825;";
-    heart.style.color = this.classList.contains("liked-header") ? "#e0245e" : "";
-  });
+    const brand = sessionStorage.getItem("cover_brand");
+    const model = sessionStorage.getItem("cover_model");
+    const category = sessionStorage.getItem("cover_category");
+    const type = sessionStorage.getItem("cover_type"); // only set when category === "Covers"
+    if (!brand || !model || !category) window.location.href = "coverbrand.html";
 
-  const CATEGORY_KEYWORDS = {
-    "Covers":           ["cover", "case"],
-    "Tempered Glass":   ["tempered", "screen guard", "screen protector"],
-    "Camera Glass":     ["camera glass", "camera lens", "camera protector"],
-    "Unique Products":  ["unique"],
-    "Mobile Battery":   ["battery"],
-    "Customized Cover": ["customized", "custom cover", "customised"]
-  };
+    const backTarget = category === "Covers" ? "covertype.html" : "covercategory.html";
+    document.getElementById("backLink").href = backTarget;
+    document.getElementById("changeLink").href = backTarget;
 
-  const brand = sessionStorage.getItem("cover_brand");
-  const model = sessionStorage.getItem("cover_model");
-  const category = sessionStorage.getItem("cover_category");
-  const type = sessionStorage.getItem("cover_type"); // only set when category === "Covers"
-  if (!brand || !model || !category) window.location.href = "coverbrand.html";
+    const phoneLabel = `${brand} ${model}`;
+    document.getElementById("badgeText").textContent = type ? `${phoneLabel} • ${category} • ${type}` : `${phoneLabel} • ${category}`;
 
-  const backTarget = category === "Covers" ? "covertype.html" : "covercategory.html";
-  document.getElementById("backLink").href = backTarget;
-  document.getElementById("changeLink").href = backTarget;
-
-  const phoneLabel = `${brand} ${model}`;
-  document.getElementById("badgeModel").textContent = phoneLabel;
-  document.getElementById("badgeType").textContent = type ? `${category} • ${type}` : category;
-  document.getElementById("listTitle").textContent = `Best ${category.toLowerCase()} for your ${phoneLabel}`;
-
-  function escapeHtml(str) {
-    return String(str ?? "").replace(/[&<>"']/g, m => ({
-      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-    })[m]);
-  }
-
-  async function load() {
-    const listEl = document.getElementById("productList");
-
-    let categoryProducts = [];
-    try {
-      const snap = await getDocs(collection(db, "products"));
-      const keywords = CATEGORY_KEYWORDS[category] || [];
-      categoryProducts = snap.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .filter(p => {
-          const c = (p.category || "").toLowerCase();
-          return keywords.some(k => c.includes(k));
-        });
-    } catch (error) {
-      console.error(error);
+    function escapeHtml(str) {
+      return String(str ?? "").replace(/[&<>"']/g, m => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      })[m]);
     }
 
-    let matched = categoryProducts;
-    let usedFallback = false;
+    let matched = [];
+    let featuredIndex = 0;
+    let qty = 1;
+    let selectedImageIndex = 0;
 
-    // Only "Covers" has a narrower Type filter to apply.
-    if (category === "Covers" && type) {
-      const TYPE_KEYWORDS = { "Flip Cover": "flip", "Bumper Case": "bumper", "Silicone Case": "silicone", "Leather Case": "leather" };
-      const OTHER_KEYWORDS = Object.values(TYPE_KEYWORDS);
+    async function loadProducts() {
+      const body = document.getElementById("pageBody");
 
-      if (TYPE_KEYWORDS[type]) {
-        matched = categoryProducts.filter(p => (p.productName || "").toLowerCase().includes(TYPE_KEYWORDS[type]));
-      } else {
-        // "Back Cover" — catch-all: not specifically another type.
-        matched = categoryProducts.filter(p => {
-          const name = (p.productName || "").toLowerCase();
-          return !OTHER_KEYWORDS.some(k => name.includes(k));
-        });
+      let categoryProducts = [];
+      try {
+        const snap = await getDocs(collection(db, "products"));
+        const keywords = CATEGORY_KEYWORDS[category] || [];
+        categoryProducts = snap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(p => {
+            const c = (p.category || "").toLowerCase();
+            return keywords.some(k => c.includes(k));
+          });
+      } catch (error) {
+        console.error(error);
       }
 
-      if (!matched.length && categoryProducts.length) {
-        matched = categoryProducts;
-        usedFallback = true;
+      matched = categoryProducts;
+
+      if (category === "Covers" && type) {
+        const TYPE_KEYWORDS = { "Flip Cover": "flip", "Bumper Case": "bumper", "Silicone Case": "silicone", "Leather Case": "leather" };
+        const OTHER_KEYWORDS = Object.values(TYPE_KEYWORDS);
+
+        let narrowed;
+        if (TYPE_KEYWORDS[type]) {
+          narrowed = categoryProducts.filter(p => (p.productName || "").toLowerCase().includes(TYPE_KEYWORDS[type]));
+        } else {
+          narrowed = categoryProducts.filter(p => {
+            const name = (p.productName || "").toLowerCase();
+            return !OTHER_KEYWORDS.some(k => name.includes(k));
+          });
+        }
+        if (narrowed.length) matched = narrowed;
       }
+
+      if (!matched.length) {
+        body.innerHTML = `<p class="empty-state">No products in this category right now — please check back soon.</p>`;
+        return;
+      }
+
+      renderFeatured();
     }
 
-    document.getElementById("listSub").textContent =
-      usedFallback
-        ? `${matched.length} product${matched.length === 1 ? "" : "s"} found (showing all ${category.toLowerCase()})`
-        : `${matched.length} product${matched.length === 1 ? "" : "s"} found`;
+    function renderFeatured() {
+      const product = matched[featuredIndex];
+      const images = Array.isArray(product.images) && product.images.length ? product.images : [product.image].filter(Boolean);
+      qty = 1;
+      selectedImageIndex = 0;
 
-    if (!matched.length) {
-      listEl.innerHTML = `<p style="color:#666;font-size:13px;">No products in this category right now — please check back soon.</p>`;
-      return;
-    }
+      const hasDiscount = product.mrp && Number(product.mrp) > Number(product.price);
 
-    listEl.innerHTML = matched.map(p => {
-      const hasDiscount = p.mrp && Number(p.mrp) > Number(p.price);
-      const offPct = hasDiscount ? Math.round((1 - Number(p.price) / Number(p.mrp)) * 100) : 0;
-      const images = Array.isArray(p.images) && p.images.length ? p.images : [p.image].filter(Boolean);
+      const otherProducts = matched.filter((_, i) => i !== featuredIndex);
 
-      const swatchRow = images.length > 1
-        ? `
-          <div class="swatch-label">Cover Color</div>
-          <div class="swatch-row" data-swatch-for="${p.id}">
+      document.getElementById("pageBody").innerHTML = `
+
+        <div class="slider-container">
+          <div class="slider-wrapper" id="slider">
             ${images.map((img, i) => `
-              <div class="swatch ${i === 0 ? "selected" : ""}" data-index="${i}">
-                <div class="swatch-thumb"><img src="${escapeHtml(img)}"></div>
-                <span class="swatch-name">Look ${i + 1}</span>
+              <div class="slide"><img data-index="${i}" src="${escapeHtml(img)}" alt="Photo ${i + 1}"></div>
+            `).join("")}
+          </div>
+        </div>
+
+        <div class="slider-dots" id="sliderDots">
+          ${images.map((_, i) => `<div class="dot ${i === 0 ? "active" : ""}"></div>`).join("")}
+        </div>
+
+        <h2 class="section-title">${escapeHtml(product.productName || "Product")}</h2>
+        <p style="font-size:12px;color:#666;margin:-8px 0 16px;">For ${escapeHtml(phoneLabel)}</p>
+
+        ${images.length > 1 ? `
+          <h2 class="section-title">Cover Color</h2>
+          <div class="color-options" id="colorOptions">
+            ${images.map((img, i) => `
+              <div class="color-card ${i === 0 ? "active" : ""}" data-index="${i}">
+                ${i === 0 ? `<div class="checkmark">✓</div>` : ""}
+                <img src="${escapeHtml(img)}" alt="Look ${i + 1}">
+                <span>Look ${i + 1}</span>
               </div>
             `).join("")}
           </div>
-        `
-        : "";
+        ` : ""}
 
-      return `
-        <div class="product-card" data-id="${p.id}" data-selected-index="0">
-          <div class="fav-icon" data-fav="${p.id}">&#9825;</div>
-          <img src="${escapeHtml(images[0] || "")}" class="product-img" data-main-img>
-
-          <div class="product-details">
-            <h4>${escapeHtml(p.productName || "Product")}</h4>
-            <p>For ${escapeHtml(phoneLabel)}</p>
-
-            ${swatchRow}
-
-            <div class="qty-row">
-              <span class="qty-label">Quantity</span>
-              <div class="qty-stepper">
-                <button type="button" class="qty-btn qty-minus">&minus;</button>
-                <span class="qty-value">1</span>
-                <button type="button" class="qty-btn qty-plus">+</button>
-              </div>
-            </div>
-
-            <div class="delivery-row">
-              <span>🚚</span><span>Estimated delivery: 2-4 business days</span>
-            </div>
-
-            <div class="order-bar">
-              <div class="price-box">
-                <span class="current-price">₹${p.price ?? 0}</span>
-                ${hasDiscount ? `<span class="old-price">₹${p.mrp}</span>` : ""}
-              </div>
-              <button class="btn-order" data-id="${p.id}">⚡ Place Order Now</button>
-            </div>
+        <div class="quantity-container">
+          <span class="section-title" style="margin: 0;">Quantity</span>
+          <div class="quantity-selector">
+            <button class="quantity-btn" id="qtyMinus">&minus;</button>
+            <span class="quantity-value" id="qtyVal">1</span>
+            <button class="quantity-btn" id="qtyPlus">+</button>
           </div>
         </div>
+
+        <div class="delivery-info">
+          <i data-lucide="truck" size="16"></i>
+          <span>Estimated delivery: 2-4 business days</span>
+        </div>
+
+        <div class="action-bar">
+          <div class="price-box">
+            <span class="current-price">₹${product.price ?? 0}</span>
+            ${hasDiscount ? `<span class="original-price">₹${product.mrp}</span>` : ""}
+          </div>
+          <button class="buy-btn" id="placeOrderBtn">
+            <i data-lucide="zap" size="16"></i>
+            PLACE ORDER NOW
+          </button>
+        </div>
+
+        ${otherProducts.length ? `
+          <div class="more-options">
+            <h2 class="section-title">More options</h2>
+            ${otherProducts.map(p => {
+              const idx = matched.indexOf(p);
+              return `
+                <div class="more-option-row" data-switch-to="${idx}">
+                  <img src="${escapeHtml(p.image || "")}" alt="">
+                  <div class="more-option-info">
+                    <div class="more-option-name">${escapeHtml(p.productName || "Product")}</div>
+                    <div class="more-option-price">₹${p.price ?? 0}</div>
+                  </div>
+                  <span class="more-option-view">View →</span>
+                </div>
+              `;
+            }).join("")}
+          </div>
+        ` : ""}
       `;
-    }).join("");
-  }
-  load();
 
-  document.getElementById("productList").addEventListener("click", (e) => {
-
-    // Swatch tap — swap the hero image + remember which look was picked.
-    const swatch = e.target.closest(".swatch");
-    if (swatch) {
-      const card = swatch.closest(".product-card");
-      card.dataset.selectedIndex = swatch.dataset.index;
-      card.querySelectorAll(".swatch").forEach(s => s.classList.remove("selected"));
-      swatch.classList.add("selected");
-      card.querySelector("[data-main-img]").src = swatch.querySelector(".swatch-thumb img").src;
-      return;
+      lucide.createIcons();
+      wireInteractions(product, images);
     }
 
-    // Like / wishlist heart
-    const fav = e.target.closest(".fav-icon");
-    if (fav) {
-      fav.classList.toggle("liked");
-      fav.innerHTML = fav.classList.contains("liked") ? "&#10084;" : "&#9825;";
-      return;
-    }
+    function wireInteractions(product, images) {
 
-    // Quantity stepper
-    const qtyBtn = e.target.closest(".qty-btn");
-    if (qtyBtn) {
-      const valueEl = qtyBtn.parentElement.querySelector(".qty-value");
-      let qty = Number(valueEl.textContent);
-      if (qtyBtn.classList.contains("qty-plus")) qty = Math.min(qty + 1, 10);
-      if (qtyBtn.classList.contains("qty-minus")) qty = Math.max(qty - 1, 1);
-      valueEl.textContent = qty;
-      return;
-    }
+      const slider = document.getElementById("slider");
+      const dots = document.querySelectorAll("#sliderDots .dot");
 
-    // Place Order Now
-    const btn = e.target.closest(".btn-order");
-    if (btn) {
-      const card = btn.closest(".product-card");
-      const qty = Number(card.querySelector(".qty-value").textContent) || 1;
-      const selectedIndex = Number(card.dataset.selectedIndex) || 0;
+      slider.addEventListener("scroll", () => {
+        const index = Math.round(slider.scrollLeft / slider.clientWidth);
+        dots.forEach((dot, i) => dot.classList.toggle("active", i === index));
+      });
 
-      const params = new URLSearchParams({ productId: btn.dataset.id, qty: String(qty) });
-      const swatchImgs = card.querySelectorAll(".swatch");
-      if (swatchImgs.length) {
-        params.set("colour", `Look ${selectedIndex + 1}`);
+      slider.querySelectorAll("img").forEach(img => {
+        img.addEventListener("click", () => openModal(img.src));
+      });
+
+      const colorOptions = document.getElementById("colorOptions");
+      if (colorOptions) {
+        colorOptions.addEventListener("click", (e) => {
+          const card = e.target.closest(".color-card");
+          if (!card) return;
+
+          selectedImageIndex = Number(card.dataset.index);
+
+          colorOptions.querySelectorAll(".color-card").forEach(c => {
+            c.classList.remove("active");
+            const chk = c.querySelector(".checkmark");
+            if (chk) chk.remove();
+          });
+          card.classList.add("active");
+          const checkmark = document.createElement("div");
+          checkmark.className = "checkmark";
+          checkmark.textContent = "✓";
+          card.appendChild(checkmark);
+
+          slider.scrollTo({ left: slider.clientWidth * selectedImageIndex, behavior: "smooth" });
+        });
       }
-      window.location.href = `covercheckout.html?${params.toString()}`;
+
+      document.getElementById("qtyMinus").addEventListener("click", () => {
+        qty = Math.max(1, qty - 1);
+        document.getElementById("qtyVal").textContent = qty;
+      });
+      document.getElementById("qtyPlus").addEventListener("click", () => {
+        qty = Math.min(10, qty + 1);
+        document.getElementById("qtyVal").textContent = qty;
+      });
+
+      document.getElementById("placeOrderBtn").addEventListener("click", () => {
+        const params = new URLSearchParams({ productId: product.id, qty: String(qty) });
+        if (images.length > 1) params.set("colour", `Look ${selectedImageIndex + 1}`);
+        window.location.href = `covercheckout.html?${params.toString()}`;
+      });
+
+      document.querySelectorAll("[data-switch-to]").forEach(row => {
+        row.addEventListener("click", () => {
+          featuredIndex = Number(row.dataset.switchTo);
+          renderFeatured();
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+      });
     }
-  });
-</script>
+
+    window.openModal = function (src) {
+      document.getElementById("modalImg").src = src;
+      document.getElementById("imageModal").classList.add("show");
+    };
+    window.closeModal = function () {
+      document.getElementById("imageModal").classList.remove("show");
+    };
+
+    document.getElementById("likeBtn").addEventListener("click", function () {
+      this.classList.toggle("liked");
+    });
+
+    document.getElementById("shareBtn").addEventListener("click", async () => {
+      const shareData = {
+        title: "Bestify",
+        text: `Check out ${category.toLowerCase()} for ${phoneLabel} on Bestify`,
+        url: window.location.href
+      };
+      try {
+        if (navigator.share) {
+          await navigator.share(shareData);
+        } else {
+          await navigator.clipboard.writeText(shareData.url);
+          alert("Link copied!");
+        }
+      } catch (error) {
+        // cancelled — nothing to do
+      }
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) return;
+      try {
+        const snap = await getDocs(collection(db, "users", user.uid, "cart"));
+        document.getElementById("cartBadge").textContent = snap.size;
+      } catch (error) {
+        console.error(error);
+      }
+    });
+
+    loadProducts();
+  </script>
 </body>
 </html>
