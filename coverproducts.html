@@ -80,6 +80,26 @@
       overflow: hidden;
     }
 
+    .slider-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(0,0,0,0.45);
+      color: #fff;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 5;
+    }
+    .slider-nav-prev { left: 10px; }
+    .slider-nav-next { right: 10px; }
+
     .slider-wrapper {
       display: flex;
       overflow-x: auto;
@@ -374,6 +394,10 @@
               <div class="slide"><img data-index="${i}" src="${escapeHtml(img)}" alt="Photo ${i + 1}"></div>
             `).join("")}
           </div>
+          ${images.length > 1 ? `
+            <button type="button" class="slider-nav slider-nav-prev" id="sliderPrev" aria-label="Previous photo">&#10094;</button>
+            <button type="button" class="slider-nav slider-nav-next" id="sliderNext" aria-label="Next photo">&#10095;</button>
+          ` : ""}
         </div>
 
         <div class="slider-dots" id="sliderDots">
@@ -449,6 +473,20 @@
       slider.querySelectorAll("img").forEach(img => {
         img.addEventListener("click", () => openModal(img.src));
       });
+
+      // Tap-to-navigate arrows — easier than swiping when the page
+      // itself also needs to scroll vertically.
+      const prevBtn = document.getElementById("sliderPrev");
+      const nextBtn = document.getElementById("sliderNext");
+      if (prevBtn && nextBtn) {
+        const goTo = (delta) => {
+          const current = Math.round(slider.scrollLeft / slider.clientWidth);
+          const next = Math.max(0, Math.min(images.length - 1, current + delta));
+          slider.scrollTo({ left: slider.clientWidth * next, behavior: "smooth" });
+        };
+        prevBtn.addEventListener("click", () => goTo(-1));
+        nextBtn.addEventListener("click", () => goTo(1));
+      }
 
       const colorOptions = document.getElementById("colorOptions");
       if (colorOptions) {
@@ -534,13 +572,4 @@
       if (!user) return;
       try {
         const snap = await getDocs(collection(db, "users", user.uid, "cart"));
-        document.getElementById("cartBadge").textContent = snap.size;
-      } catch (error) {
-        console.error(error);
-      }
-    });
-
-    loadProducts();
-  </script>
-</body>
-</html>
+        document.getElementById("cartBadge"
