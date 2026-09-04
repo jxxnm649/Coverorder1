@@ -315,7 +315,16 @@
     const model = sessionStorage.getItem("cover_model");
     const category = sessionStorage.getItem("cover_category");
     const type = sessionStorage.getItem("cover_type"); // only set when category === "Covers"
-    if (!brand || !model || !category) window.location.href = "coverbrand.html";
+
+    // Render whatever static icons exist right away (header back/like/
+    // share/close), independent of whether product data loads OK —
+    // previously these silently stayed blank if loadProducts() ever
+    // errored before its own lucide.createIcons() call.
+    if (window.lucide) lucide.createIcons();
+
+    if (!brand || !model || !category) {
+      window.location.href = "coverbrand.html";
+    } else {
 
     const backTarget = category === "Covers" ? "covertype.html" : "covercategory.html";
     document.getElementById("backLink").href = backTarget;
@@ -337,6 +346,7 @@
 
     async function loadProducts() {
       const body = document.getElementById("pageBody");
+      try {
 
       let categoryProducts = [];
       try {
@@ -376,6 +386,18 @@
       }
 
       renderFeatured();
+
+      } catch (error) {
+        console.error("loadProducts error:", error);
+        body.innerHTML = `
+          <p class="empty-state">
+            Something went wrong loading products.<br>
+            <button type="button" id="retryLoadBtn" style="margin-top:10px;background:#6b21a8;color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:700;cursor:pointer;">Retry</button>
+          </p>
+        `;
+        const retryBtn = document.getElementById("retryLoadBtn");
+        if (retryBtn) retryBtn.addEventListener("click", loadProducts);
+      }
     }
 
     function renderFeatured() {
@@ -456,7 +478,7 @@
         </div>
       `;
 
-      lucide.createIcons();
+      if (window.lucide) lucide.createIcons();
       wireInteractions(product, images);
     }
 
@@ -572,4 +594,15 @@
       if (!user) return;
       try {
         const snap = await getDocs(collection(db, "users", user.uid, "cart"));
-        document.getElementById("cartBadge"
+        document.getElementById("cartBadge").textContent = snap.size;
+      } catch (error) {
+        console.error(error);
+      }
+    });
+
+    loadProducts();
+
+    } // end of "sessionStorage present" branch
+  </script>
+</body>
+</html>
