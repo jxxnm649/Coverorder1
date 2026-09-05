@@ -205,6 +205,11 @@ form.addEventListener("submit", async (e) => {
 
       const orderNumber = await nextSequenceNumber("orders");
 
+      // Cashback: a fixed, order-value-based rate (not a random/lucky-
+      // draw amount) — credited for real to the customer's wallet only
+      // once the admin marks the order Delivered (see admin/orders.js).
+      const cashbackAmount = Math.min(Math.round(totalAmount * 0.05), 100);
+
       const orderRef = await addDoc(collection(db, "orders"), {
 
         userId: currentUser.uid,
@@ -218,6 +223,8 @@ form.addEventListener("submit", async (e) => {
         paymentMethod,
         status: "Pending",
         createdAt: new Date(),
+        cashbackAmount,
+        cashbackStatus: cashbackAmount > 0 ? "pending" : "none",
         ...extra
 
       });
