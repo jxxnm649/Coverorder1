@@ -124,6 +124,10 @@ function renderSkeletons(container, count = 4) {
 }
 
 // ---------- Product card (Bestify card design) ----------
+function escapeAttr(str) {
+  return String(str ?? "").replace(/"/g, "&quot;");
+}
+
 function productCardHTML(p) {
   const hasStock = typeof p.stock === "number";
   const outOfStock = hasStock && p.stock === 0;
@@ -137,6 +141,7 @@ function productCardHTML(p) {
   return `
     <div class="bf-card" data-id="${p.id}">
       ${hasDiscount ? `<span class="bf-sale-badge">${pct}% OFF</span>` : ""}
+      <button class="bf-share-btn" data-id="${p.id}" data-name="${escapeAttr(p.productName)}" aria-label="Share">📤</button>
 
       <div class="bf-carousel">
         <img src="${p.image}" alt="${p.productName}">
@@ -195,7 +200,31 @@ async function handleAddToCart(id) {
 }
 
 function attachCardEvents(container) {
-  container.addEventListener("click", (e) => {
+  container.addEventListener("click", async (e) => {
+
+    const shareBtn = e.target.closest(".bf-share-btn");
+    if (shareBtn) {
+      e.stopPropagation();
+
+      const shareUrl = new URL(`product.html?id=${shareBtn.dataset.id}`, window.location.href).href;
+      const shareData = {
+        title: shareBtn.dataset.name || "Bestify",
+        text: `Check out ${shareBtn.dataset.name || "this product"} on Bestify`,
+        url: shareUrl
+      };
+
+      try {
+        if (navigator.share) {
+          await navigator.share(shareData);
+        } else {
+          await navigator.clipboard.writeText(shareUrl);
+          alert("Link copied!");
+        }
+      } catch (error) {
+        // user cancelled the share sheet — nothing to do
+      }
+      return;
+    }
 
     const cartBtn = e.target.closest(".bf-btn-cart");
     if (cartBtn) {
