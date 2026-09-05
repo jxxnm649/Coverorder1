@@ -24,6 +24,26 @@ const recentlyViewedStrip = document.getElementById("recentlyViewedStrip");
 const rateSuggestion = document.getElementById("rateSuggestion");
 const logoutBtn = document.getElementById("logoutBtn");
 
+const accAvatarWrap = document.getElementById("accAvatarWrap");
+const accImgViewer = document.getElementById("accImgViewer");
+const accImgViewerImg = document.getElementById("accImgViewerImg");
+const accImgViewerClose = document.getElementById("accImgViewerClose");
+
+if (accAvatarWrap) {
+  accAvatarWrap.addEventListener("click", () => {
+    accImgViewerImg.src = accAvatar.src;
+    accImgViewer.classList.add("show");
+  });
+}
+if (accImgViewerClose) {
+  accImgViewerClose.addEventListener("click", () => accImgViewer.classList.remove("show"));
+}
+if (accImgViewer) {
+  accImgViewer.addEventListener("click", (e) => {
+    if (e.target === accImgViewer) accImgViewer.classList.remove("show");
+  });
+}
+
 function escapeHtml(str) {
   if (typeof str !== "string") return str;
   return str.replace(/[&<>"']/g, m => ({
