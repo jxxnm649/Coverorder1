@@ -17,6 +17,8 @@ const txnList = document.getElementById("txnList");
 const currentBalanceEl = document.getElementById("currentBalance");
 const totalInEl = document.getElementById("totalIn");
 const totalOutEl = document.getElementById("totalOut");
+const pendingCashbackCard = document.getElementById("pendingCashbackCard");
+const pendingCashbackAmountEl = document.getElementById("pendingCashbackAmount");
 const typeTabs = document.getElementById("typeTabs");
 const fromDate = document.getElementById("fromDate");
 const toDate = document.getElementById("toDate");
@@ -131,6 +133,12 @@ async function loadTransactions(user) {
     const userSnap = await getDoc(doc(db, "users", user.uid));
     const balance = userSnap.exists() ? Number(userSnap.data().walletBalance || 0) : 0;
     currentBalanceEl.textContent = `₹${balance.toLocaleString("en-IN")}`;
+
+    const pendingCashback = userSnap.exists() ? Number(userSnap.data().pendingCashbackBalance || 0) : 0;
+    if (pendingCashback > 0) {
+      pendingCashbackAmountEl.textContent = `₹${pendingCashback.toLocaleString("en-IN")}`;
+      pendingCashbackCard.style.display = "block";
+    }
 
     const q = query(
       collection(db, "walletTransactions"),
