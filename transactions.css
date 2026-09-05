@@ -2,27 +2,53 @@ body{ padding: 20px; }
 
 .container{ max-width: 700px; margin: 0 auto; }
 
-/* ---------- Balance summary card ---------- */
-.txn-balance-card{
-  background: linear-gradient(135deg, var(--ink), var(--ink-soft));
+/* ---------- Wallet header card (gradient) ---------- */
+.wallet-card{
+  background: linear-gradient(135deg, #4f46e5, #3b82f6);
   color: #fff;
   border-radius: var(--radius);
-  padding: 20px;
-  margin-bottom: 18px;
+  padding: 22px;
+  margin-bottom: 14px;
   box-shadow: var(--shadow);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
 }
-.txn-balance-label{ font-size: 12px; opacity: .8; }
-.txn-balance-amount{ font-size: 28px; font-weight: 700; margin: 4px 0 10px; font-family: var(--font-display); }
-.txn-balance-sub{ display: flex; gap: 18px; font-size: 13px; }
-.txn-in{ color: #7CE0A6; }
-.txn-out{ color: #FF9C8C; }
+.wallet-info p{ font-size: 13px; opacity: .9; }
+.wallet-info h2{ font-size: 30px; margin: 4px 0 8px; font-family: var(--font-display); }
+.wallet-sub{ display: flex; gap: 16px; font-size: 12.5px; }
+.txn-in{ color: #b7f5ce; }
+.txn-out{ color: #ffc7bb; }
 .txn-in b, .txn-out b{ color: #fff; }
 
-/* ---------- Search row + Filters trigger ---------- */
-.txn-search-row{ display: flex; gap: 10px; margin-bottom: 16px; }
+.withdraw-btn{
+  background: #fff;
+  color: #4f46e5;
+  border: none;
+  padding: 11px 18px;
+  border-radius: 8px;
+  font-weight: 800;
+  cursor: pointer;
+  font-size: 14px;
+  flex-shrink: 0;
+  font-family: var(--font-body);
+}
+
+/* Kept for the pending-cashback card, which stays in its own
+   distinct (non-gradient) style so it doesn't look like usable money. */
+.txn-balance-card{
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow-sm);
+}
+.txn-balance-label{ font-size: 12px; opacity: .8; }
+.txn-balance-amount{ font-size: 24px; font-weight: 700; margin: 4px 0 6px; font-family: var(--font-display); }
+.txn-balance-sub{ font-size: 12.5px; }
+
+/* ---------- Search box ---------- */
 .txn-search-box{
-  flex: 1;
-  min-width: 0; /* without this, the input inside forces this flex child to its content width instead of growing */
   display: flex;
   align-items: center;
   gap: 8px;
@@ -44,143 +70,38 @@ body{ padding: 20px; }
   font-size: 13px;
   background: transparent;
 }
-.txn-filters-btn{
-  flex-shrink: 0;
+
+/* ---------- Filter chips (horizontal scroll) ---------- */
+.filter-section{
   display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 16px;
-  border-radius: var(--radius);
-  border: 1.5px solid var(--marigold-deep);
-  background: var(--card);
-  color: var(--marigold-deep);
-  font-weight: 700;
-  font-size: 13px;
-  cursor: pointer;
-  font-family: var(--font-body);
+  gap: 8px;
+  overflow-x: auto;
   white-space: nowrap;
+  scrollbar-width: none;
+  margin-bottom: 12px;
+  padding-bottom: 2px;
 }
+.filter-section::-webkit-scrollbar{ display: none; }
 
-/* ---------- Bottom-sheet filter modal ---------- */
-.txn-filter-overlay{
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.45);
-  z-index: 100;
-  align-items: flex-end;
-  justify-content: center;
-}
-.txn-filter-overlay.show{ display: flex; }
-
-.txn-filter-sheet{
-  background: var(--card);
-  width: 100%;
-  max-width: 700px;
-  border-radius: 20px 20px 0 0;
-  box-shadow: var(--shadow);
-  max-height: 85vh;
-  overflow-y: auto;
-  animation: txnSheetUp .2s ease;
-}
-@keyframes txnSheetUp{
-  from{ transform: translateY(20px); opacity: 0; }
-  to{ transform: translateY(0); opacity: 1; }
-}
-
-.txn-filter-header{
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px 20px;
-  border-bottom: 1px solid var(--line);
-}
-.txn-filter-header h3{
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: .03em;
-  color: var(--ink);
-}
-.txn-filter-close{
-  border: 0;
-  background: none;
-  font-size: 18px;
-  color: var(--ink);
-  cursor: pointer;
-}
-
-.txn-filter-body{ padding: 18px 20px; }
-.txn-filter-body h4{
+.filter-chip{
+  flex-shrink: 0;
+  background: var(--paper-dim);
+  color: var(--ink-soft);
+  border: 1px solid var(--line);
+  padding: 8px 16px;
+  border-radius: 999px;
   font-size: 13px;
   font-weight: 700;
-  color: var(--ink-soft);
-  margin-bottom: 10px;
-}
-
-.txn-filter-radio-row{
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 0;
-  font-size: 15px;
-  color: var(--ink);
-  cursor: pointer;
-}
-.txn-filter-radio-row input{ display: none; }
-.txn-radio-circle{
-  width: 22px;
-  height: 22px;
-  min-width: 22px;
-  border-radius: 50%;
-  border: 2px solid var(--line);
-  position: relative;
-}
-.txn-filter-radio-row input:checked + .txn-radio-circle{
-  border-color: var(--marigold-deep);
-}
-.txn-filter-radio-row input:checked + .txn-radio-circle::after{
-  content: "";
-  position: absolute;
-  inset: 4px;
-  border-radius: 50%;
-  background: var(--marigold-deep);
-}
-
-.txn-filter-actions{
-  display: flex;
-  gap: 12px;
-  padding: 16px 20px;
-  border-top: 1px solid var(--line);
-  position: sticky;
-  bottom: 0;
-  background: var(--card);
-}
-.txn-clear-btn{
-  flex: 1;
-  padding: 13px;
-  border-radius: var(--radius-sm);
-  border: 1.5px solid var(--line);
-  background: var(--card);
-  color: var(--ink);
-  font-size: 14px;
-  font-weight: 700;
   cursor: pointer;
   font-family: var(--font-body);
 }
-.txn-apply-btn{
-  flex: 1.4;
-  padding: 13px;
-  border-radius: var(--radius-sm);
-  border: none;
-  background: var(--marigold-deep);
+.filter-chip.active{
+  background: #4f46e5;
   color: #fff;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  font-family: var(--font-body);
+  border-color: #4f46e5;
 }
 
-.txn-date-row{ display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+.txn-date-row{ display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 16px; }
 .txn-field{ display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 120px; }
 .txn-field label{ font-size: 11px; color: var(--ink-soft); }
 .txn-field input{
@@ -189,6 +110,16 @@ body{ padding: 20px; }
   border: 1px solid var(--line);
   font-family: var(--font-body);
   font-size: 13px;
+}
+.txn-clear-btn{
+  padding: 9px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--paper-dim);
+  color: var(--ink-soft);
+  font-size: 13px;
+  cursor: pointer;
+  font-family: var(--font-body);
 }
 
 /* ---------- Transaction list ---------- */
