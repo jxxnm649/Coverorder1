@@ -23,6 +23,8 @@ body{ padding: 20px; }
 .txn-in b, .txn-out b{ color: #fff; }
 
 .withdraw-btn{
+  width: auto;
+  margin: 0;
   background: #fff;
   color: #4f46e5;
   border: none;
@@ -84,7 +86,11 @@ body{ padding: 20px; }
 .filter-section::-webkit-scrollbar{ display: none; }
 
 .filter-chip{
+  width: auto; /* the site's global `button{width:100%}` rule was
+                  stretching just this first chip to fill the whole
+                  row, hiding the rest */
   flex-shrink: 0;
+  margin: 0;
   background: var(--paper-dim);
   color: var(--ink-soft);
   border: 1px solid var(--line);
