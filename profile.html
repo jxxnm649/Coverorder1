@@ -19,7 +19,10 @@
 
     <!-- Identity -->
     <div class="acc-identity">
-      <img id="accAvatar" class="acc-avatar" src="" alt="Profile picture">
+      <div class="acc-avatar-wrap" id="accAvatarWrap">
+        <img id="accAvatar" class="acc-avatar" src="" alt="Profile picture">
+        <a href="edit-profile.html" class="acc-avatar-edit-badge" aria-label="Change profile picture" onclick="event.stopPropagation();">✏️</a>
+      </div>
       <div>
         <div class="acc-name" id="accName">—</div>
         <div class="acc-email" id="accEmail">—</div>
@@ -99,6 +102,11 @@
       <a href="https://youtube.com/@bestifymobilekolavi" target="_blank" rel="noopener" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
     </div>
 
+  </div>
+
+  <div class="acc-img-viewer" id="accImgViewer">
+    <button type="button" class="acc-img-viewer-close" id="accImgViewerClose">✕</button>
+    <img id="accImgViewerImg" src="" alt="">
   </div>
 
   <nav class="bottom-nav">
