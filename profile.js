@@ -1,154 +1,99 @@
 import { auth, db } from "./firebase.js";
 
-import { onAuthStateChanged }
-from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+import {
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
 import {
   doc,
-  getDoc,
-  updateDoc
-}
-from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+  getDoc
+} from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-const form = document.getElementById("profileForm");
-const saveBtn = document.getElementById("profileSaveBtn");
-const profilePicPreview = document.getElementById("profilePicPreview");
-const profilePicInput = document.getElementById("profilePicInput");
-const completionPercent = document.getElementById("completionPercent");
-const completionFill = document.getElementById("completionFill");
+import { touchSession } from "./session-tracker.js";
 
-const DEFAULT_AVATAR = "https://api.dicebear.com/7.x/initials/svg?seed=U&backgroundColor=F2A93B";
-
-const FIELD_IDS = [
-  "name", "mobile", "secondaryPhone", "gender", "dob", "work",
-  "address", "city", "state", "pincode"
-];
-
-let selectedPicFile = null;
-let currentPicUrl = "";
-
-function updateCompletion(data) {
-
-  const trackedValues = [
-    data.name, data.mobile, data.secondaryPhone, data.gender, data.dob,
-    data.work, data.address, data.city, data.state, data.pincode,
-    data.profilePicture
-  ];
-
-  const filled = trackedValues.filter(v => v && String(v).trim().length > 0).length;
-  const pct = Math.round((filled / trackedValues.length) * 100);
-
-  completionPercent.textContent = `${pct}%`;
-  completionFill.style.width = `${pct}%`;
-
-}
-
-function readCurrentFormData() {
-  const data = {};
-  FIELD_IDS.forEach((id) => {
-    data[id] = document.getElementById(id).value.trim();
-  });
-  data.profilePicture = currentPicUrl;
-  return data;
-}
-
-profilePicInput.addEventListener("change", () => {
-
-  const file = profilePicInput.files[0];
-  if (!file) return;
-
-  selectedPicFile = file;
-  profilePicPreview.src = URL.createObjectURL(file);
-
-});
-
-async function uploadProfilePic() {
-
-  if (!selectedPicFile) return currentPicUrl;
-
-  const formData = new FormData();
-  formData.append("file", selectedPicFile);
-  formData.append("upload_preset", "Bestifyimg");
-
-  const response = await fetch(
-    "https://api.cloudinary.com/v1_1/rgksliph/image/upload",
-    { method: "POST", body: formData }
-  );
-
-  const data = await response.json();
-  return data.secure_url;
-
-}
-
-onAuthStateChanged(auth, async (user) => {
-
-  if (!user) {
-    window.location.href = "login.html";
-    return;
-  }
-
-  const docRef = doc(db, "users", user.uid);
-  const docSnap = await getDoc(docRef);
-
-  let data = {};
-
-  if (docSnap.exists()) {
-    data = docSnap.data();
-  }
-
-  document.getElementById("name").value = data.name || "";
-  document.getElementById("email").value = data.email || user.email || "";
-  document.getElementById("mobile").value = data.mobile || "";
-  document.getElementById("secondaryPhone").value = data.secondaryPhone || "";
-  document.getElementById("gender").value = data.gender || "";
-  document.getElementById("dob").value = data.dob || "";
-  document.getElementById("work").value = data.work || "";
-  document.getElementById("address").value = data.address || "";
-  document.getElementById("city").value = data.city || "";
-  document.getElementById("state").value = data.state || "";
-  document.getElementById("pincode").value = data.pincode || "";
-
-  currentPicUrl = data.profilePicture || "";
-  profilePicPreview.src = currentPicUrl || DEFAULT_AVATAR;
-
-  updateCompletion(data);
-
-  FIELD_IDS.forEach((id) => {
-    document.getElementById(id).addEventListener("input", () => {
-      updateCompletion(readCurrentFormData());
-    });
-  });
-
-  form.addEventListener("submit", async (e) => {
-
-    e.preventDefault();
-
-    saveBtn.disabled = true;
-    saveBtn.textContent = "Saving...";
-
-    try {
-
-      if (selectedPicFile) {
-        currentPicUrl = await uploadProfilePic();
-      }
-
-      const updateData = readCurrentFormData();
-
-      await updateDoc(docRef, updateData);
-
-      updateCompletion(updateData);
-      selectedPicFile = null;
-
-      alert("Profile Updated Successfully ✅");
-
-    } catch (error) {
-      console.error("Profile save error:", error);
-      alert(error.message || "Failed to update profile.");
-    } finally {
-      saveBtn.disabled = false;
-      saveBtn.textContent = "Save Profile";
+async function vendorLinkHtml(uid) {
+  try {
+    const snap = await getDoc(doc(db, "vendors", uid));
+    if (snap.exists() && snap.data().status === "Active") {
+      return `<a href="vendor/dashboard.html">🏪 Supplier Dashboard</a>`;
     }
+  } catch (error) {
+    console.error("Vendor link check error:", error);
+  }
+  return `<a href="vendor-apply.html">🏪 Become a Supplier</a>`;
+}
 
+async function buildMenu(moreBtn, uid) {
+
+  const popup = document.createElement("div");
+  popup.className = "pm-popup";
+  popup.id = "pmPopup";
+  popup.innerHTML = `
+    <a href="profile.html">👤 My Profile</a>
+    <a href="orders.html">📦 My Orders</a>
+    <a href="transactions.html">🧾 My Transactions</a>
+    <a href="withdraw.html">💸 Withdraw Funds</a>
+    <a href="wishlist.html">😊 Liked</a>
+    <a href="chat.html">💬 Chat with Us</a>
+    ${await vendorLinkHtml(uid)}
+    <button type="button" class="pm-logout" id="pmLogoutBtn">🚪 Logout</button>
+  `;
+
+  document.body.appendChild(popup);
+
+  moreBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    popup.classList.toggle("open");
   });
 
+  document.addEventListener("click", (e) => {
+    if (!popup.contains(e.target) && !moreBtn.contains(e.target)) {
+      popup.classList.remove("open");
+    }
+  });
+
+  document.getElementById("pmLogoutBtn").addEventListener("click", async () => {
+    try {
+      await signOut(auth);
+      window.location.href = "login.html";
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+
+}
+
+function injectNavAvatar(seed, photoUrl) {
+
+  const navSpan = document.querySelector('.bottom-nav a[href="profile.html"] span');
+  if (!navSpan) return;
+
+  const src = photoUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(seed || "U")}&backgroundColor=F2A93B`;
+
+  navSpan.innerHTML = `<img src="${src}" alt="My Account" style="width:22px;height:22px;border-radius:50%;object-fit:cover;display:block;">`;
+
+}
+
+onAuthStateChanged(auth, (user) => {
+  if (!user) return;
+
+  touchSession(user.uid);
+
+  const moreBtn = document.getElementById("moreMenuBtn");
+  if (moreBtn && !document.getElementById("pmPopup")) {
+    buildMenu(moreBtn, user.uid);
+  }
+
+  // Bottom-nav "My Account" icon — a real profile photo instead of
+  // the generic 🏪 icon, same as Gmail's account avatar.
+  getDoc(doc(db, "users", user.uid))
+    .then((snap) => {
+      const data = snap.exists() ? snap.data() : {};
+      injectNavAvatar(data.name || user.email, data.profilePicture);
+    })
+    .catch((error) => {
+      console.error("Nav avatar load error:", error);
+      injectNavAvatar(user.email, null);
+    });
 });
