@@ -15,36 +15,60 @@
 
     <div class="container">
 
-        <div class="brand-header">
-            <span class="brand-text">Bestifymobile</span>
-
-            <div class="brand-header-actions">
-                <a href="coverindex.html" class="offer-btn" aria-label="Find phone accessories">
-                    <span class="offer-btn-badge">1</span>
-                    <i class="fa-solid fa-camera"></i>
-                    <span>FIND FIT</span>
-                </a>
-
-                <button class="menu-toggle" id="menuToggle" aria-label="Menu" aria-expanded="false">
-                    <i class="fa-solid fa-bars"></i>
-                </button>
-            </div>
+        <div class="top-header">
+            <span class="brand-name">Bestify Mobile</span>
+            <a href="coverindex.html" class="find-fit-btn" aria-label="Find phone accessories">
+                <i class="fa-solid fa-camera"></i> FIND FIT
+            </a>
         </div>
 
-        <!-- Menu dropdown (social links) -->
-        <div class="menu-dropdown" id="menuDropdown">
-            <a href="https://chat.whatsapp.com/Cks7jxkxJJKGBnepHs8U5j" target="_blank" rel="noopener" class="menu-link">
-                <i class="fa-brands fa-whatsapp" style="color:#25D366"></i> WhatsApp Community
+        <!-- Auto-rotating banner (real store offer + real social links) -->
+        <div class="banner-slider-box" id="bannerSlider">
+
+            <span class="slide-item active">
+                <span class="slide-content">
+                    <i class="fa-solid fa-mobile-screen-button slide-icon store-icon"></i>
+                    <span class="slide-text">
+                        <h4>Bestify Mobile Offers</h4>
+                        <p id="storeOfferText">Check out our latest deals</p>
+                    </span>
+                </span>
+                <i class="fa-solid fa-chevron-right action-arrow"></i>
+            </span>
+
+            <a href="https://chat.whatsapp.com/Cks7jxkxJJKGBnepHs8U5j" target="_blank" rel="noopener" class="slide-item">
+                <span class="slide-content">
+                    <i class="fa-brands fa-whatsapp slide-icon whatsapp-icon"></i>
+                    <span class="slide-text">
+                        <h4>Join WhatsApp Community</h4>
+                        <p>Get daily new stock updates</p>
+                    </span>
+                </span>
+                <i class="fa-solid fa-chevron-right action-arrow"></i>
             </a>
-            <a href="https://whatsapp.com/channel/0029VbBwTCkDp2QGRkvcaq2v" target="_blank" rel="noopener" class="menu-link">
-                <i class="fa-brands fa-whatsapp" style="color:#25D366"></i> WhatsApp Updates
+
+            <a href="https://www.instagram.com/bestify_mobile_kolavi" target="_blank" rel="noopener" class="slide-item">
+                <span class="slide-content">
+                    <i class="fa-brands fa-instagram slide-icon instagram-icon"></i>
+                    <span class="slide-text">
+                        <h4>Follow on Instagram</h4>
+                        <p>Watch latest product videos &amp; reels</p>
+                    </span>
+                </span>
+                <i class="fa-solid fa-chevron-right action-arrow"></i>
             </a>
-            <a href="https://www.instagram.com/bestify_mobile_kolavi" target="_blank" rel="noopener" class="menu-link">
-                <i class="fa-brands fa-instagram" style="color:#d6249f"></i> Instagram
+
+            <a href="https://youtube.com/@bestifymobilekolavi" target="_blank" rel="noopener" class="slide-item">
+                <span class="slide-content">
+                    <i class="fa-brands fa-youtube slide-icon youtube-icon"></i>
+                    <span class="slide-text">
+                        <h4>Subscribe on YouTube</h4>
+                        <p>Product unboxing &amp; reviews</p>
+                    </span>
+                </span>
+                <i class="fa-solid fa-chevron-right action-arrow"></i>
             </a>
-            <a href="https://youtube.com/@bestifymobilekolavi" target="_blank" rel="noopener" class="menu-link">
-                <i class="fa-brands fa-youtube" style="color:#FF0000"></i> YouTube
-            </a>
+
         </div>
 
         <!-- Search -->
@@ -126,21 +150,19 @@
     <script type="module" src="profile-menu.js"></script>
 
     <script>
-        const menuToggle = document.getElementById("menuToggle");
-        const menuDropdown = document.getElementById("menuDropdown");
+        // Auto-rotating banner (store offer + social links)
+        (function () {
+            const slides = document.querySelectorAll("#bannerSlider .slide-item");
+            if (!slides.length) return;
 
-        menuToggle.addEventListener("click", (e) => {
-            e.stopPropagation();
-            const isOpen = menuDropdown.classList.toggle("open");
-            menuToggle.setAttribute("aria-expanded", isOpen);
-        });
+            let currentSlide = 0;
 
-        document.addEventListener("click", (e) => {
-            if (!menuDropdown.contains(e.target) && !menuToggle.contains(e.target)) {
-                menuDropdown.classList.remove("open");
-                menuToggle.setAttribute("aria-expanded", "false");
-            }
-        });
+            setInterval(() => {
+                slides[currentSlide].classList.remove("active");
+                currentSlide = (currentSlide + 1) % slides.length;
+                slides[currentSlide].classList.add("active");
+            }, 3000);
+        })();
     </script>
 
 </body>
