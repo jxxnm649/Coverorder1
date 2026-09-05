@@ -19,7 +19,6 @@ const totalInEl = document.getElementById("totalIn");
 const totalOutEl = document.getElementById("totalOut");
 const pendingCashbackCard = document.getElementById("pendingCashbackCard");
 const pendingCashbackAmountEl = document.getElementById("pendingCashbackAmount");
-const typeTabs = document.getElementById("typeTabs");
 const fromDate = document.getElementById("fromDate");
 const toDate = document.getElementById("toDate");
 const clearFiltersBtn = document.getElementById("clearFilters");
@@ -103,11 +102,14 @@ function applyFilters() {
 
 }
 
-typeTabs.addEventListener("click", (e) => {
-  const btn = e.target.closest(".txn-tab");
-  if (!btn) return;
-  activeType = btn.dataset.type;
-  [...typeTabs.children].forEach(b => b.classList.toggle("active", b === btn));
+const typeChips = document.getElementById("typeChips");
+
+typeChips.addEventListener("click", (e) => {
+  const chip = e.target.closest(".filter-chip");
+  if (!chip) return;
+
+  activeType = chip.dataset.type;
+  [...typeChips.children].forEach(c => c.classList.toggle("active", c === chip));
   applyFilters();
 });
 
@@ -120,7 +122,7 @@ clearFiltersBtn.addEventListener("click", () => {
   fromDate.value = "";
   toDate.value = "";
   txnSearch.value = "";
-  [...typeTabs.children].forEach(b => b.classList.toggle("active", b.dataset.type === "all"));
+  [...typeChips.children].forEach(c => c.classList.toggle("active", c.dataset.type === "all"));
   applyFilters();
 });
 
