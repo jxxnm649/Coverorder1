@@ -14,14 +14,19 @@
 
     <h1>My Transactions 🧾</h1>
 
-    <!-- Balance summary -->
-    <div class="txn-balance-card">
-      <div class="txn-balance-label">Current Balance</div>
-      <div class="txn-balance-amount" id="currentBalance">₹0</div>
-      <div class="txn-balance-sub">
-        <span class="txn-in">↓ In: <b id="totalIn">₹0</b></span>
-        <span class="txn-out">↑ Out: <b id="totalOut">₹0</b></span>
+    <!-- Wallet header card -->
+    <div class="wallet-card">
+      <div class="wallet-info">
+        <p>Total Balance</p>
+        <h2 id="currentBalance">₹0</h2>
+        <div class="wallet-sub">
+          <span class="txn-in">↓ In: <b id="totalIn">₹0</b></span>
+          <span class="txn-out">↑ Out: <b id="totalOut">₹0</b></span>
+        </div>
       </div>
+      <a href="withdraw.html" style="text-decoration:none;">
+        <button type="button" class="withdraw-btn">Withdraw</button>
+      </a>
     </div>
 
     <!-- Pending cashback — not usable/withdrawable yet -->
@@ -33,69 +38,30 @@
       </div>
     </div>
 
-    <a href="withdraw.html" style="text-decoration:none;">
-      <button type="button" class="bf-btn bf-btn-primary bf-btn-block" style="margin-bottom:18px;">💸 Withdraw Funds</button>
-    </a>
-
-    <!-- Search + Filters trigger -->
-    <div class="txn-search-row">
-      <div class="txn-search-box">
-        <span>🔍</span>
-        <input type="text" id="txnSearch" placeholder="Search by reason...">
-      </div>
-      <button type="button" id="openFiltersBtn" class="txn-filters-btn">☰ Filters</button>
+    <!-- Search -->
+    <div class="txn-search-box" style="margin-bottom:12px;">
+      <span>🔍</span>
+      <input type="text" id="txnSearch" placeholder="Search by reason...">
     </div>
 
-    <!-- Bottom-sheet filter modal -->
-    <div class="txn-filter-overlay" id="filterOverlay">
-      <div class="txn-filter-sheet">
+    <!-- Filter chips -->
+    <div class="filter-section" id="typeChips">
+      <button type="button" class="filter-chip active" data-type="all">All</button>
+      <button type="button" class="filter-chip" data-type="credit">Credit (In)</button>
+      <button type="button" class="filter-chip" data-type="debit">Debit (Out)</button>
+    </div>
 
-        <div class="txn-filter-header">
-          <h3>FILTER BY</h3>
-          <button type="button" id="closeFiltersBtn" class="txn-filter-close">✕</button>
-        </div>
-
-        <div class="txn-filter-body">
-
-          <h4>Type</h4>
-
-          <label class="txn-filter-radio-row">
-            <input type="radio" name="txnTypeFilter" value="all" checked>
-            <span class="txn-radio-circle"></span>
-            All
-          </label>
-          <label class="txn-filter-radio-row">
-            <input type="radio" name="txnTypeFilter" value="credit">
-            <span class="txn-radio-circle"></span>
-            Credit (In)
-          </label>
-          <label class="txn-filter-radio-row">
-            <input type="radio" name="txnTypeFilter" value="debit">
-            <span class="txn-radio-circle"></span>
-            Debit (Out)
-          </label>
-
-          <h4 style="margin-top:22px;">Date Range</h4>
-
-          <div class="txn-date-row">
-            <div class="txn-field">
-              <label>From</label>
-              <input type="date" id="fromDate">
-            </div>
-            <div class="txn-field">
-              <label>To</label>
-              <input type="date" id="toDate">
-            </div>
-          </div>
-
-        </div>
-
-        <div class="txn-filter-actions">
-          <button type="button" id="clearFilters" class="txn-clear-btn">Clear</button>
-          <button type="button" id="applyFiltersBtn" class="txn-apply-btn">Apply</button>
-        </div>
-
+    <!-- Date range (optional, compact) -->
+    <div class="txn-date-row">
+      <div class="txn-field">
+        <label>From</label>
+        <input type="date" id="fromDate">
       </div>
+      <div class="txn-field">
+        <label>To</label>
+        <input type="date" id="toDate">
+      </div>
+      <button type="button" id="clearFilters" class="txn-clear-btn">Clear</button>
     </div>
 
     <!-- List -->
