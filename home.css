@@ -412,6 +412,25 @@ body{
     z-index: 2;
 }
 
+.bf-share-btn{
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    margin: 0;
+    background: rgba(0,0,0,0.45);
+    color: #fff;
+    border: none;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 2;
+}
+
 .bf-carousel{
     width: 100%;
     aspect-ratio: 1 / 1;
