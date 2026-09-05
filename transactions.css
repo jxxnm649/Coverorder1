@@ -22,6 +22,7 @@ body{ padding: 20px; }
 .txn-search-row{ display: flex; gap: 10px; margin-bottom: 16px; }
 .txn-search-box{
   flex: 1;
+  min-width: 0; /* without this, the input inside forces this flex child to its content width instead of growing */
   display: flex;
   align-items: center;
   gap: 8px;
@@ -29,9 +30,14 @@ body{ padding: 20px; }
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 10px 14px;
+  box-sizing: border-box;
 }
 .txn-search-box input{
   flex: 1;
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+  padding: 0;
   border: 0;
   outline: none;
   font-family: var(--font-body);
@@ -39,6 +45,7 @@ body{ padding: 20px; }
   background: transparent;
 }
 .txn-filters-btn{
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 6px;
