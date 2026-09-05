@@ -1,99 +1,346 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Checkout & Payment</title>
-<style>
-  body { font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f4f6f8; display: flex; justify-content: center; }
-  .app-container { width: 100%; max-width: 414px; background: #ffffff; min-height: 100vh; position: relative; padding-bottom: 90px; }
-  
-  .header { display: flex; align-items: center; padding: 20px; }
-  .header h2 { margin: 0; font-size: 18px; margin-left: 20px; font-weight: 600; }
+import { auth, db } from "./firebase.js";
 
-  .section-box { margin: 0 20px 15px 20px; padding: 15px; background: #fff; border-radius: 12px; border: 1px solid #eee; }
-  .section-box h3 { margin: 0 0 10px 0; font-size: 14px; color: #333; display: flex; justify-content: space-between; align-items: center; }
-  
-  .order-summary { display: flex; gap: 12px; align-items: center; }
-  .order-summary img, .placeholder-img { width: 50px; height: 50px; background: #222; color: #fff; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
-  
-  .price-details { font-size: 13px; color: #555; }
-  .price-row-item { display: flex; justify-content: space-between; margin-bottom: 6px; }
-  .total-row { font-weight: bold; color: #111; font-size: 15px; border-top: 1px dashed #ddd; padding-top: 8px; margin-top: 8px; }
+import {
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
-  .address-box { font-size: 13px; color: #444; line-height: 1.4; }
-  .change-link { color: #006b44; font-weight: bold; cursor: pointer; font-size: 12px; }
+import {
+  collection,
+  getDocs,
+  addDoc,
+  deleteDoc,
+  doc,
+  getDoc
+} from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-  .payment-option { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid #f0f0f0; cursor: pointer; }
-  .payment-option:last-child { border-bottom: none; }
-  .payment-option input { margin-right: 12px; accent-color: #006b44; }
+import {
+  getFunctions,
+  httpsCallable
+} from "https://www.gstatic.com/firebasejs/12.6.0/firebase-functions.js";
 
-  .summary-row{ display:flex; justify-content:space-between; font-size:13px; color:#555; margin-bottom:6px; }
-  .summary-total{ font-weight:bold; color:#111; font-size:15px; border-top:1px dashed #ddd; padding-top:8px; margin-top:8px; }
-  .no-results{ color:#888; font-size:14px; text-align:center; padding:20px 0; }
-  .bottom-bar { position: fixed; bottom: 0; width: 100%; max-width: 414px; background: #fff; padding: 15px 20px; box-sizing: border-box; border-top: 1px solid #eee; }
-  .btn-place-order { background: #006b44; color: white; border: none; padding: 16px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; display: flex; justify-content: space-between; align-items: center; }
-  label{ display:block; font-size:12px; font-weight:700; color:#333; margin:12px 0 4px; }
-  input[type="text"], input[type="tel"], textarea{
-    width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:14px;
-    box-sizing:border-box; font-family:inherit;
+import { raiseAdminAlert } from "./admin-alerts.js";
+import { nextSequenceNumber } from "./counters.js";
+
+const functions = getFunctions();
+const createRazorpayOrder = httpsCallable(functions, "createRazorpayOrder");
+const verifyRazorpayPayment = httpsCallable(functions, "verifyRazorpayPayment");
+
+const form = document.getElementById("checkoutForm");
+const summaryEl = document.getElementById("orderSummary");
+
+let currentUser = null;
+
+const params = new URLSearchParams(window.location.search);
+const buyNowProductId = params.get("productId");
+const buyNowQty = Number(params.get("qty")) || 1;
+const buyNowSize = params.get("size");
+const buyNowColour = params.get("colour");
+
+onAuthStateChanged(auth, (user) => {
+
+  if (!user) {
+    window.location.href = "login.html";
+    return;
   }
-  textarea{ min-height:70px; resize:vertical; }
-</style>
-</head>
-<body>
-<div class="app-container">
-  <div class="header">
-    <a href="coverproducts.html" style="font-size: 20px;text-decoration:none;color:inherit;">&#8592;</a><h2>Checkout</h2>
-  </div>
 
-  <!-- Order Item Summary (auto-filled with real order data) -->
-  <div class="section-box">
-    <h3 style="margin:0 0 10px;font-size:14px;color:#333;">Your Order</h3>
-    <div id="orderSummary"></div>
-  </div>
+  currentUser = user;
+  renderSummary();
+  prefillFromProfile(user);
 
-  <form id="checkoutForm">
+});
 
-    <!-- Delivery Details -->
-    <div class="section-box">
-      <h3 style="margin:0 0 4px;font-size:14px;color:#333;">Deliver to</h3>
+// Prefill checkout form with saved profile details (name/mobile/address), still editable
+async function prefillFromProfile(user) {
+  try {
+    const docSnap = await getDoc(doc(db, "users", user.uid));
+    if (!docSnap.exists()) return;
 
-      <label for="customerName">Full Name</label>
-      <input type="text" id="customerName" placeholder="Your full name" required>
+    const data = docSnap.data();
+    const nameField = document.getElementById("customerName");
+    const mobileField = document.getElementById("mobile");
+    const addressField = document.getElementById("address");
 
-      <label for="mobile">Mobile Number</label>
-      <input type="tel" id="mobile" placeholder="10-digit mobile number" required>
+    const isValidText = (v) => typeof v === "string" && v.trim() && v.trim().toLowerCase() !== "true" && v.trim().toLowerCase() !== "false";
 
-      <label for="address">Delivery Address</label>
-      <textarea id="address" placeholder="House no, street, area, city, pincode" required></textarea>
+    if (nameField && !nameField.value && isValidText(data.name)) nameField.value = data.name;
+    if (mobileField && !mobileField.value && isValidText(data.mobile)) mobileField.value = data.mobile;
+    if (addressField && !addressField.value && isValidText(data.address)) addressField.value = data.address;
+
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+// Fetch the items that will be ordered (Buy Now product OR full cart)
+async function getOrderItems() {
+
+  const products = [];
+  let cartSnapshot = null;
+
+  if (buyNowProductId) {
+
+    const productSnap = await getDoc(doc(db, "products", buyNowProductId));
+
+    if (!productSnap.exists()) {
+      return { products: [], cartSnapshot: null };
+    }
+
+    products.push({
+      ...productSnap.data(),
+      id: buyNowProductId,
+      qty: buyNowQty,
+      ...(buyNowSize ? { selectedSize: buyNowSize } : {}),
+      ...(buyNowColour ? { selectedColour: buyNowColour } : {})
+    });
+
+  } else {
+
+    cartSnapshot = await getDocs(
+      collection(db, "users", currentUser.uid, "cart")
+    );
+
+    cartSnapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      products.push({ ...data, id: docSnap.id, qty: data.qty || 1 });
+    });
+
+  }
+
+  return { products, cartSnapshot };
+
+}
+
+function calcTotal(products) {
+  return products.reduce(
+    (sum, item) => sum + Number(item.price) * Number(item.qty || 1),
+    0
+  );
+}
+
+async function renderSummary() {
+
+  const { products } = await getOrderItems();
+
+  if (products.length === 0) {
+    summaryEl.innerHTML = `<p class="no-results">Your Cart is Empty 🛒</p>`;
+    form.querySelector("button[type=submit]").disabled = true;
+    return;
+  }
+
+  const total = calcTotal(products);
+
+  let totalSavings = 0;
+
+  const rowsHtml = products.map(p => {
+
+    const qty = Number(p.qty || 1);
+    const price = Number(p.price) || 0;
+    const mrp = Number(p.mrp) || 0;
+    const hasDiscount = mrp > price;
+    const lineTotal = price * qty;
+
+    if (hasDiscount) totalSavings += (mrp - price) * qty;
+
+    const variantText = (p.selectedSize || p.selectedColour)
+      ? ` <small style="color:var(--ink-soft,#888);">(${[p.selectedSize, p.selectedColour].filter(Boolean).join(", ")})</small>`
+      : "";
+
+    return `
+      <div class="summary-row" style="align-items:center;gap:10px;">
+        ${p.image ? `<img src="${p.image}" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex-shrink:0;">` : ""}
+        <span style="flex:1;min-width:0;">
+          ${p.productName || "Product"}${qty > 1 ? ` × ${qty}` : ""}${variantText}
+          ${hasDiscount ? `<br><span style="font-size:11px;"><span style="text-decoration:line-through;color:#999;">₹${mrp * qty}</span> <span style="color:#16a34a;font-weight:700;">Saved ₹${(mrp - price) * qty}</span></span>` : ""}
+        </span>
+        <span style="flex-shrink:0;font-weight:600;">₹${lineTotal}</span>
+      </div>
+    `;
+  }).join("");
+
+  summaryEl.innerHTML = `
+    ${rowsHtml}
+    ${totalSavings > 0 ? `
+      <div class="summary-row" style="color:#16a34a;font-weight:600;">
+        <span>Total Savings</span>
+        <span>− ₹${totalSavings}</span>
+      </div>
+    ` : ""}
+    <div class="summary-row summary-total">
+      <span>Total</span>
+      <span>₹${total}</span>
     </div>
+  `;
 
-    <!-- Payment Methods -->
-    <div class="section-box">
-      <h3 style="margin:0 0 10px;font-size:14px;color:#333;">Payment Method</h3>
-      <label class="payment-option" style="display:flex;">
-        <input type="radio" name="paymentMethod" value="online" checked>
-        <div><strong>Pay Online (UPI / Card)</strong><div style="font-size:11px; color:#666;">Fast &amp; secure via Razorpay</div></div>
-      </label>
-      <label class="payment-option" style="display:flex;">
-        <input type="radio" name="paymentMethod" value="cod">
-        <div><strong>Cash on Delivery (COD)</strong><div style="font-size:11px; color:#666;">Pay when you receive</div></div>
-      </label>
-    </div>
+}
 
-    <div class="bottom-bar">
-      <button type="submit" id="placeOrderBtn" class="btn-place-order">
-        <span>Place Order</span>
-        <span>&rarr;</span>
-      </button>
-    </div>
+form.addEventListener("submit", async (e) => {
 
-  </form>
-</div>
+  e.preventDefault();
 
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-<script type="module" src="checkout.js"></script>
+  const customerName = document.getElementById("customerName").value;
+  const mobile = document.getElementById("mobile").value;
+  const address = document.getElementById("address").value;
+  const paymentMethod = document.querySelector(
+    'input[name="paymentMethod"]:checked'
+  ).value;
 
-</body>
-</html>
+  const placeOrderBtn = document.getElementById("placeOrderBtn");
+
+  try {
+
+    const { products, cartSnapshot } = await getOrderItems();
+
+    if (products.length === 0) {
+      alert(buyNowProductId ? "Product Not Found" : "Your Cart is Empty");
+      return;
+    }
+
+    const totalAmount = calcTotal(products);
+
+    // Unique vendor ids among the ordered items — lets suppliers query
+    // "orders that include my products" via array-contains.
+    const vendorIds = [...new Set(products.map(p => p.vendorId).filter(Boolean))];
+
+    async function saveOrderAndFinish(extra = {}) {
+
+      const orderNumber = await nextSequenceNumber("orders");
+
+      const orderRef = await addDoc(collection(db, "orders"), {
+
+        userId: currentUser.uid,
+        customerName,
+        mobile,
+        address,
+        products,
+        vendorIds,
+        orderNumber,
+        total: totalAmount,
+        paymentMethod,
+        status: "Pending",
+        createdAt: new Date(),
+        ...extra
+
+      });
+
+      raiseAdminAlert("order", `New order placed by ${customerName || "a customer"} — ₹${totalAmount}`, {
+        userId: currentUser.uid,
+        orderId: orderRef.id
+      });
+
+      if (!buyNowProductId && cartSnapshot) {
+
+        for (const cartDoc of cartSnapshot.docs) {
+          await deleteDoc(
+            doc(db, "users", currentUser.uid, "cart", cartDoc.id)
+          );
+        }
+
+      }
+
+      window.location.href = `payment-success.html?orderId=${orderRef.id}&method=${paymentMethod}`;
+
+    }
+
+    // ---------- Cash on Delivery ----------
+    if (paymentMethod === "cod") {
+
+      placeOrderBtn.disabled = true;
+      placeOrderBtn.textContent = "Placing Order...";
+
+      await saveOrderAndFinish();
+      return;
+
+    }
+
+    // ---------- Online Payment (Razorpay) ----------
+    // The order is created server-side (createRazorpayOrder) so the
+    // amount can't be tampered with client-side, and it's only written
+    // to Firestore after verifyRazorpayPayment confirms the payment
+    // signature on the server — see functions/index.js.
+
+    placeOrderBtn.disabled = true;
+    placeOrderBtn.textContent = "Starting Payment...";
+
+    let rzpOrder;
+
+    try {
+      const { data } = await createRazorpayOrder({ amount: totalAmount });
+      rzpOrder = data;
+    } catch (error) {
+      console.log(error);
+      alert("Could not start payment. Please try again.");
+      placeOrderBtn.disabled = false;
+      placeOrderBtn.textContent = "Place Order";
+      return;
+    }
+
+    placeOrderBtn.textContent = "Place Order";
+    placeOrderBtn.disabled = false;
+
+    const options = {
+
+      key: rzpOrder.keyId,
+      order_id: rzpOrder.orderId,
+      amount: rzpOrder.amount,
+      currency: rzpOrder.currency,
+
+      name: "Bestify Store",
+
+      description: "Product Purchase",
+
+      handler: async function (response) {
+
+        try {
+
+          const { data } = await verifyRazorpayPayment({
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+            orderData: {
+              customerName,
+              mobile,
+              address,
+              products,
+              cartItemIds: (!buyNowProductId && cartSnapshot)
+                ? cartSnapshot.docs.map(d => d.id)
+                : []
+            }
+          });
+
+          window.location.href = `payment-success.html?orderId=${data.orderId}&method=online`;
+
+        } catch (error) {
+          console.log(error);
+          window.location.href = "payment-failed.html";
+        }
+
+      },
+
+      modal: {
+        ondismiss: function () {
+          window.location.href = "payment-failed.html";
+        }
+      },
+
+      theme: {
+        color: "#14213D"
+      }
+
+    };
+
+    const rzp = new Razorpay(options);
+
+    rzp.on("payment.failed", function () {
+      window.location.href = "payment-failed.html";
+    });
+
+    rzp.open();
+
+  } catch (error) {
+
+    console.log(error);
+    alert(error.message);
+
+  }
+
+});
