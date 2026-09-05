@@ -28,6 +28,11 @@
   gap: 12px;
   margin-bottom: 16px;
 }
+.acc-avatar-wrap{
+  position: relative;
+  flex-shrink: 0;
+  cursor: pointer;
+}
 .acc-avatar{
   width: 54px;
   height: 54px;
@@ -35,6 +40,23 @@
   object-fit: cover;
   background: var(--paper-dim);
   border: 2px solid var(--line);
+  display: block;
+}
+.acc-avatar-edit-badge{
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--marigold-deep);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  border: 2px solid var(--paper);
+  text-decoration: none;
 }
 .acc-name{ font-weight: 700; font-size: 16px; }
 .acc-email{ font-size: 12px; color: var(--ink-soft); }
@@ -43,7 +65,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(135deg, var(--ink), var(--ink-soft));
+  background: linear-gradient(135deg, #4f46e5, #3b82f6);
   color: #fff;
   border-radius: var(--radius);
   padding: 16px 18px;
@@ -177,3 +199,34 @@
 }
 .acc-social-row a{ color: var(--ink-soft); }
 .acc-social-row a:hover{ color: var(--marigold-deep); }
+
+/* ---------- Fullscreen avatar viewer ---------- */
+.acc-img-viewer{
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.9);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+}
+.acc-img-viewer.show{ display: flex; }
+.acc-img-viewer img{
+  max-width: 90%;
+  max-height: 80%;
+  border-radius: 12px;
+}
+.acc-img-viewer-close{
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+}
