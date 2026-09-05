@@ -346,6 +346,7 @@ function renderMessages(messages) {
           color:${isAdmin ? "#fff" : "inherit"};
         ">
           <div style="font-size:14px; white-space:pre-wrap;">${escapeHtml(m.text || "")}</div>
+          ${m.imageUrl ? `<img src="${escapeHtml(m.imageUrl)}" alt="" style="max-width:220px;border-radius:10px;margin-top:6px;display:block;">` : ""}
           <div style="font-size:11px; opacity:.75; margin-top:4px; text-align:right;">
             ${formatDate(m.createdAt)}
           </div>
