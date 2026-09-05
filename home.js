@@ -368,6 +368,23 @@ async function loadProducts() {
       .filter(p => p.status !== "Inactive") // Hide vendor/admin-paused products from the storefront
       .filter(p => p.approvalStatus !== "Pending" && p.approvalStatus !== "Rejected"); // Hide vendor submissions awaiting admin review
 
+    // Real current best discount for the banner slide — computed from
+    // actual product pricing rather than a hardcoded "% OFF" claim.
+    const storeOfferEl = document.getElementById("storeOfferText");
+    if (storeOfferEl) {
+      const discounts = allProducts
+        .map(p => {
+          const mrp = Number(p.mrp) || 0;
+          const price = Number(p.price) || 0;
+          return mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
+        })
+        .filter(pct => pct > 0);
+
+      storeOfferEl.textContent = discounts.length
+        ? `Get up to ${Math.max(...discounts)}% OFF on select products`
+        : "Check out our latest products";
+    }
+
     renderCategories(allProducts);
 
     // Featured / Best Sellers: top 4 products
