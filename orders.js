@@ -350,6 +350,12 @@ async function applyOrderStatus(newStatus, triggerBtn, defaultLabel) {
       await creditOrderCashbackIfPending(currentDetailsOrderId);
     }
 
+    // A cancelled order's cashback will never be delivered — clear it
+    // from the customer's pending total instead of leaving it stuck.
+    if (newStatus === "Cancelled") {
+      await voidOrderCashbackIfPending(currentDetailsOrderId);
+    }
+
     renderOrderList();
     showToast("Order status updated", "success");
     closeModal("orderDetailsModal");
@@ -388,7 +394,15 @@ async function creditOrderCashbackIfPending(orderId) {
     const currentBalance = Number(userSnap.data().walletBalance) || 0;
     const newBalance = currentBalance + Number(order.cashbackAmount);
 
-    await updateDoc(userRef, { walletBalance: newBalance });
+    const currentPending = Number(userSnap.data().pendingCashbackBalance) || 0;
+    // Never below 0 — guards against this order's amount already having
+    // been adjusted out-of-band (e.g. a manual correction).
+    const newPending = Math.max(0, currentPending - Number(order.cashbackAmount));
+
+    await updateDoc(userRef, {
+      walletBalance: newBalance,
+      pendingCashbackBalance: newPending
+    });
 
     await addDoc(collection(db, "walletTransactions"), {
       userId: order.userId,
@@ -411,6 +425,35 @@ async function creditOrderCashbackIfPending(orderId) {
   } catch (error) {
     console.error("Cashback credit error:", error);
     showToast("Order status updated, but cashback credit failed — check wallet manually.", "danger");
+  }
+
+}
+
+// Removes a cancelled order's amount from the customer's pending
+// total — no wallet credit happens here, since the order was never
+// delivered.
+async function voidOrderCashbackIfPending(orderId) {
+
+  try {
+
+    const orderSnap = await getDoc(doc(db, "orders", orderId));
+    if (!orderSnap.exists()) return;
+
+    const order = orderSnap.data();
+    if (!order.cashbackAmount || order.cashbackStatus !== "pending") return;
+
+    const userRef = doc(db, "users", order.userId);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) return;
+
+    const currentPending = Number(userSnap.data().pendingCashbackBalance) || 0;
+    const newPending = Math.max(0, currentPending - Number(order.cashbackAmount));
+
+    await updateDoc(userRef, { pendingCashbackBalance: newPending });
+    await updateDoc(doc(db, "orders", orderId), { cashbackStatus: "voided" });
+
+  } catch (error) {
+    console.error("Cashback void error:", error);
   }
 
 }
