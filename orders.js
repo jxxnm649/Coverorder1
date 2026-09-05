@@ -1,4 +1,4 @@
-import { auth, db } from "./firebase.js";
+import { auth, db } from "../firebase.js";
 
 import {
   onAuthStateChanged
@@ -7,134 +7,555 @@ import {
 import {
   collection,
   getDocs,
-  query,
-  where,
   doc,
-  updateDoc
+  getDoc,
+  updateDoc,
+  addDoc,
+  query,
+  orderBy
 } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-import { raiseAdminAlert } from "./admin-alerts.js";
+import {
+  openModal,
+  closeModal,
+  showToast
+} from "../design-system.js";
 
-const ordersDiv = document.getElementById("orders");
+import { logAdminAction } from "./audit.js";
+
+
+const ordersList = document.getElementById("ordersList");
+const orderCount = document.getElementById("orderCount");
+const orderSearch = document.getElementById("orderSearch");
 const orderStatusFilter = document.getElementById("orderStatusFilter");
-const orderSearchInput = document.getElementById("orderSearchInput");
+
+const orderDetailsModal = document.getElementById("orderDetailsModal");
+const orderDetailsCloseBtn = document.getElementById("orderDetailsCloseBtn");
+const orderDetailsContent = document.getElementById("orderDetailsContent");
+
+const STATUS_OPTIONS = [
+  "Pending", "Confirmed", "Packed", "Shipped",
+  "Out for Delivery", "Delivered", "Cancelled"
+];
 
 let allOrders = [];
+let currentDetailsOrderId = null;
+let selectedOrderIds = new Set();
 
-const STEPS = ["Ordered", "Packed", "Shipped", "Delivered"];
 
-function stepIndexFor(status) {
-  switch (status) {
-    case "Pending":
-    case "Ordered":
-    case "Confirmed":
-      return 0;
-    case "Packed":
-      return 1;
-    case "Shipped":
-      return 2;
-    case "Out for Delivery":
-    case "Delivered":
-      return 3;
-    default:
-      return 0;
-  }
+/* =========================
+   HELPERS
+========================= */
+
+function escapeHtml(str) {
+  if (typeof str !== "string") return str;
+  return str.replace(/[&<>"']/g, m => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[m]);
 }
 
 function formatDate(ts) {
   try {
     const d = ts?.toDate ? ts.toDate() : new Date(ts);
-    return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+    if (isNaN(d.getTime())) return "Not available";
+    return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) +
+      " · " +
+      d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
   } catch {
-    return "";
+    return "Not available";
   }
 }
 
-function renderTracker(order) {
+function statusPillClass(status) {
+  if (status === "Cancelled") return "bf-status-danger";
+  if (status === "Delivered") return "bf-status-success";
+  if (status === "Pending") return "bf-status-pending";
+  return "bf-status-progress";
+}
 
-  if (order.status === "Cancelled") {
-    return `<div class="cancelled-banner">❌ This order was cancelled</div>`;
-  }
 
-  const activeIndex = stepIndexFor(order.status);
-  const progressWidth = (activeIndex / (STEPS.length - 1)) * 100 + "%";
+/* =========================
+   LOAD & RENDER
+========================= */
 
-  const icons = ["fa-check", "fa-box", "fa-truck", "fa-house"];
+async function loadOrders() {
 
-  const stepsHTML = STEPS.map((label, i) => {
-    let cls = "";
-    if (i < activeIndex) cls = "completed";
-    else if (i === activeIndex) cls = "current";
+  try {
 
-    return `
-      <div class="step ${cls}">
-        <div class="circle"><i class="fa-solid ${icons[i]}"></i></div>
-        <span>${label}</span>
+    let snapshot;
+
+    try {
+      snapshot = await getDocs(
+        query(collection(db, "orders"), orderBy("createdAt", "desc"))
+      );
+    } catch {
+      snapshot = await getDocs(collection(db, "orders"));
+    }
+
+    allOrders = snapshot.docs.map((docSnap) => ({
+      id: docSnap.id,
+      ...docSnap.data()
+    }));
+
+    renderOrderList();
+
+  } catch (error) {
+
+    console.error("Orders loading error:", error);
+
+    ordersList.innerHTML = `
+      <div class="bf-card" style="padding:20px;">
+        ❌ Unable to load orders.
       </div>
     `;
-  }).join("");
 
-  return `
-    <div class="status-tracker">
-      <div class="progress-bar">
-        <div class="progress-line" style="width: ${progressWidth};"></div>
-        ${stepsHTML}
-      </div>
-    </div>
-  `;
-
-}
-
-function renderOrderCard(id, order) {
-
-  const orderTotal = order.total ?? order.totalPrice ?? 0;
-
-  let productsHTML = "";
-  if (Array.isArray(order.products)) {
-    order.products.forEach((product) => {
-      productsHTML += `
-        <div class="product-item" ${product.id ? `data-product-id="${product.id}" style="cursor:pointer;"` : ""}>
-          <img src="${product.image}" alt="${product.productName}">
-          <div class="product-details">
-            <h3>${product.productName}${product.qty > 1 ? ` × ${product.qty}` : ""}</h3>
-            ${(product.selectedSize || product.selectedColour) ? `<p style="font-size:12px;color:var(--ink-soft);margin:0 0 4px;">${[product.selectedSize, product.selectedColour].filter(Boolean).join(", ")}</p>` : ""}
-            <p class="price">₹${product.price}</p>
-          </div>
-        </div>
-      `;
-    });
   }
 
-  const canCancel = ["Pending", "Confirmed", "Ordered", "Packed"].includes(order.status);
-  const statusClass = order.status === "Cancelled" ? "status-rust" : "status-leaf";
+}
+
+function getFilteredOrders() {
+
+  const term = orderSearch.value.trim().toLowerCase();
+  const statusFilter = orderStatusFilter.value;
+
+  return allOrders.filter((order) => {
+
+    const name = (order.customerName || "").toLowerCase();
+    const mobile = (order.mobile || "").toLowerCase();
+    const idMatch = order.id.toLowerCase().includes(term);
+
+    const matchesTerm = !term || name.includes(term) || mobile.includes(term) || idMatch;
+    const matchesStatus = statusFilter === "All Status" || order.status === statusFilter;
+
+    return matchesTerm && matchesStatus;
+
+  });
+
+}
+
+function renderOrderList() {
+
+  const filtered = getFilteredOrders();
+
+  orderCount.textContent = `Total Orders: ${allOrders.length}`;
+
+  if (!filtered.length) {
+    ordersList.innerHTML = `
+      <div class="bf-card" style="padding:20px;">
+        No orders found.
+      </div>
+    `;
+    return;
+  }
+
+  ordersList.innerHTML = filtered.map((order) => {
+
+    const total = order.total ?? order.totalPrice ?? 0;
+    const itemCount = Array.isArray(order.products) ? order.products.length : 0;
+
+    return `
+      <div class="bf-card" style="padding:16px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+
+        <div style="display:flex; align-items:flex-start; gap:10px;">
+          <input type="checkbox" class="order-select-checkbox" data-id="${escapeHtml(order.id)}" ${selectedOrderIds.has(order.id) ? "checked" : ""} style="margin-top:4px; width:18px; height:18px;">
+
+          <div>
+            <div style="font-weight:700;">
+              #${escapeHtml(String(order.orderNumber || order.id.slice(0, 8).toUpperCase()))}
+              &nbsp;·&nbsp;
+              ${escapeHtml(order.customerName || "Customer")}
+            </div>
+
+            <div style="font-size:13px; opacity:.7; margin-top:2px;">
+              ${escapeHtml(order.mobile || "No mobile")} · ${itemCount} item${itemCount === 1 ? "" : "s"} · ₹${escapeHtml(String(total))}
+            </div>
+
+            <div style="font-size:12px; opacity:.55; margin-top:2px;">
+              ${formatDate(order.createdAt)}
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="bf-status-pill ${statusPillClass(order.status)}">
+            ${escapeHtml(order.status || "Pending")}
+          </span>
+
+          ${order.mobile ? `
+            <a href="tel:${escapeHtml(order.mobile)}" class="bf-btn bf-btn-ghost bf-btn-sm" style="text-decoration:none;" title="Call customer">
+              📞
+            </a>
+          ` : ""}
+
+          <button
+            type="button"
+            class="bf-btn bf-btn-ghost bf-btn-sm view-order-btn"
+            data-id="${escapeHtml(order.id)}">
+            View
+          </button>
+        </div>
+
+      </div>
+    `;
+
+  }).join("");
+
+  updateBulkBar();
+
+}
+
+if (orderSearch) {
+  orderSearch.addEventListener("input", renderOrderList);
+}
+
+if (orderStatusFilter) {
+  orderStatusFilter.addEventListener("change", renderOrderList);
+}
+
+
+/* =========================
+   ORDER DETAILS MODAL
+========================= */
+
+function renderOrderDetails(order) {
+
+  const total = order.total ?? order.totalPrice ?? 0;
+
+  const productsHTML = Array.isArray(order.products) && order.products.length
+    ? order.products.map((p) => `
+        <div style="display:flex; gap:10px; align-items:center; padding:8px 0; border-bottom:1px solid var(--line, #E4DED2);">
+          <img
+            src="${escapeHtml(p.image || "")}"
+            alt="${escapeHtml(p.productName || "")}"
+            style="width:50px; height:50px; object-fit:cover; border-radius:8px;">
+
+          <div style="flex:1;">
+            <div style="font-weight:600; font-size:13px;">
+              ${escapeHtml(p.productName || "Product")}${p.qty > 1 ? ` × ${escapeHtml(String(p.qty))}` : ""}
+            </div>
+            ${(p.selectedSize || p.selectedColour) ? `
+              <div style="font-size:12px; opacity:.65;">
+                ${escapeHtml([p.selectedSize, p.selectedColour].filter(Boolean).join(", "))}
+              </div>
+            ` : ""}
+          </div>
+
+          <div style="font-weight:600; font-size:13px;">
+            ₹${escapeHtml(String(p.price ?? ""))}
+          </div>
+        </div>
+      `).join("")
+    : `<p style="opacity:.6;">No item details available.</p>`;
+
+  orderDetailsContent.innerHTML = `
+
+    <div style="margin-bottom:14px;">
+      <div><b>Order ID:</b> #${escapeHtml(String(order.orderNumber || order.id.slice(0, 8).toUpperCase()))}</div>
+      <div><b>Customer:</b> ${escapeHtml(order.customerName || "Customer")}</div>
+      <div><b>Mobile:</b> ${escapeHtml(order.mobile || "Not available")}</div>
+      <div><b>Address:</b> ${escapeHtml(order.address || "Not available")}</div>
+      <div><b>Payment:</b> ${order.paymentMethod === "cod" ? "Cash on Delivery" : "Paid Online"}</div>
+      <div><b>Total:</b> ₹${escapeHtml(String(total))}</div>
+      <div><b>Placed on:</b> ${formatDate(order.createdAt)}</div>
+    </div>
+
+    ${order.mobile ? `
+      <a href="tel:${escapeHtml(order.mobile)}" style="text-decoration:none;">
+        <button type="button" class="bf-btn bf-btn-primary bf-btn-block" style="margin-bottom:14px;">
+          📞 Call Customer to Confirm
+        </button>
+      </a>
+    ` : ""}
+
+    <h3 style="font-size:14px; margin:16px 0 8px;">🛍️ Items</h3>
+    <div style="margin-bottom:16px;">
+      ${productsHTML}
+    </div>
+
+    ${(order.status === "Pending" || order.status === "Confirmed") ? `
+      <h3 style="font-size:14px; margin:16px 0 8px;">☎️ After calling the customer</h3>
+      <p style="font-size:12px; opacity:.65; margin:-4px 0 10px;">Confirm the order only after you've spoken to the customer on the phone.</p>
+      <div style="display:flex; gap:8px; margin-bottom:16px;">
+        <button type="button" id="quickAcceptBtn" class="bf-btn bf-btn-primary" style="flex:1;">✅ Accept Order</button>
+        <button type="button" id="quickRejectBtn" class="bf-btn bf-btn-ghost" style="flex:1;color:#c62828;">❌ Reject Order</button>
+      </div>
+    ` : ""}
+
+    <h3 style="font-size:14px; margin:16px 0 8px;">📦 Update Status</h3>
+
+    <div class="bf-field">
+      <select id="orderStatusSelect" class="bf-select">
+        ${STATUS_OPTIONS.map(s =>
+          `<option value="${s}" ${order.status === s ? "selected" : ""}>${s}</option>`
+        ).join("")}
+      </select>
+    </div>
+
+    <button
+      type="button"
+      id="updateOrderStatusBtn"
+      class="bf-btn bf-btn-primary bf-btn-block">
+      Update Status
+    </button>
+
+  `;
+
+}
+
+if (ordersList) {
+  ordersList.addEventListener("click", (e) => {
+
+    const viewBtn = e.target.closest(".view-order-btn");
+    if (!viewBtn) return;
+
+    const id = viewBtn.dataset.id;
+    const order = allOrders.find(o => o.id === id);
+    if (!order) return;
+
+    currentDetailsOrderId = id;
+    renderOrderDetails(order);
+    openModal("orderDetailsModal");
+
+  });
+}
+
+if (orderDetailsCloseBtn) {
+  orderDetailsCloseBtn.addEventListener("click", () => {
+    closeModal("orderDetailsModal");
+  });
+}
+
+async function applyOrderStatus(newStatus, triggerBtn, defaultLabel) {
+
+  triggerBtn.disabled = true;
+  triggerBtn.textContent = "Updating...";
+
+  try {
+
+    await updateDoc(doc(db, "orders", currentDetailsOrderId), { status: newStatus });
+
+    await logAdminAction("Updated order status", "Orders", {
+      orderId: currentDetailsOrderId,
+      newStatus
+    });
+
+    const idx = allOrders.findIndex(o => o.id === currentDetailsOrderId);
+    if (idx !== -1) {
+      allOrders[idx] = { ...allOrders[idx], status: newStatus };
+    }
+
+    // Real cashback credit — happens exactly once, only when an order
+    // that still has a pending cashback is marked Delivered.
+    if (newStatus === "Delivered") {
+      await creditOrderCashbackIfPending(currentDetailsOrderId);
+    }
+
+    renderOrderList();
+    showToast("Order status updated", "success");
+    closeModal("orderDetailsModal");
+
+  } catch (error) {
+
+    console.error("Order status update error:", error);
+    showToast(error.message || "Failed to update status.", "danger");
+
+  } finally {
+
+    triggerBtn.disabled = false;
+    triggerBtn.textContent = defaultLabel;
+
+  }
+
+}
+
+// Credits an order's cashback to the customer's real wallet, exactly
+// once. Guarded by cashbackStatus so re-toggling the order status
+// (e.g. Delivered -> Shipped -> Delivered) never pays out twice.
+async function creditOrderCashbackIfPending(orderId) {
+
+  try {
+
+    const orderSnap = await getDoc(doc(db, "orders", orderId));
+    if (!orderSnap.exists()) return;
+
+    const order = orderSnap.data();
+    if (!order.cashbackAmount || order.cashbackStatus !== "pending") return;
+
+    const userRef = doc(db, "users", order.userId);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) return;
+
+    const currentBalance = Number(userSnap.data().walletBalance) || 0;
+    const newBalance = currentBalance + Number(order.cashbackAmount);
+
+    await updateDoc(userRef, { walletBalance: newBalance });
+
+    await addDoc(collection(db, "walletTransactions"), {
+      userId: order.userId,
+      customerName: order.customerName || "",
+      type: "credit",
+      amount: order.cashbackAmount,
+      reason: `Delivery cashback — Order #${order.orderNumber || orderId.slice(0, 8)}`,
+      balanceAfter: newBalance,
+      createdAt: new Date()
+    });
+
+    await updateDoc(doc(db, "orders", orderId), { cashbackStatus: "credited" });
+
+    await logAdminAction("Credited delivery cashback", "Orders", {
+      orderId,
+      userId: order.userId,
+      amount: order.cashbackAmount
+    });
+
+  } catch (error) {
+    console.error("Cashback credit error:", error);
+    showToast("Order status updated, but cashback credit failed — check wallet manually.", "danger");
+  }
+
+}
+
+if (orderDetailsContent) {
+  orderDetailsContent.addEventListener("click", async (e) => {
+
+    if (e.target.id === "updateOrderStatusBtn") {
+      const select = document.getElementById("orderStatusSelect");
+      await applyOrderStatus(select.value, e.target, "Update Status");
+      return;
+    }
+
+    if (e.target.id === "quickAcceptBtn") {
+      await applyOrderStatus("Confirmed", e.target, "✅ Accept Order");
+      return;
+    }
+
+    if (e.target.id === "quickRejectBtn") {
+      const sure = confirm("Reject this order? This cancels it for the customer.");
+      if (!sure) return;
+      await applyOrderStatus("Cancelled", e.target, "❌ Reject Order");
+    }
+
+  });
+}
+
+
+/* =========================
+   BULK SELECT + SHIPPING LABELS
+========================= */
+
+const bulkBar = document.getElementById("bulkBar");
+const bulkCount = document.getElementById("bulkCount");
+const bulkLabelsBtn = document.getElementById("bulkLabelsBtn");
+const bulkClearBtn = document.getElementById("bulkClearBtn");
+
+function updateBulkBar() {
+  if (!bulkBar) return;
+  if (selectedOrderIds.size > 0) {
+    bulkBar.style.display = "flex";
+    bulkCount.textContent = `${selectedOrderIds.size} order${selectedOrderIds.size === 1 ? "" : "s"} selected`;
+  } else {
+    bulkBar.style.display = "none";
+  }
+}
+
+if (ordersList) {
+  ordersList.addEventListener("change", (e) => {
+    const checkbox = e.target.closest(".order-select-checkbox");
+    if (!checkbox) return;
+
+    if (checkbox.checked) {
+      selectedOrderIds.add(checkbox.dataset.id);
+    } else {
+      selectedOrderIds.delete(checkbox.dataset.id);
+    }
+
+    updateBulkBar();
+  });
+}
+
+if (bulkClearBtn) {
+  bulkClearBtn.addEventListener("click", () => {
+    selectedOrderIds.clear();
+    renderOrderList();
+  });
+}
+
+function labelHTML(order) {
+
+  const itemsHTML = (order.products || []).map(p =>
+    `<div>${escapeHtml(p.productName || "")}${p.qty > 1 ? ` × ${p.qty}` : ""} — ${escapeHtml(p.productCode || "")}</div>`
+  ).join("");
 
   return `
-    <div class="order-card">
-      <div class="order-head">
-        <span class="order-id-tag">#${order.orderNumber || id.slice(0, 8).toUpperCase()}</span>
-        <span class="order-date">${formatDate(order.createdAt)}</span>
+    <div class="ship-label">
+      <div class="ship-label-header">
+        <div><b>Bestify Mobile</b><br>Kolavi</div>
+        <div style="text-align:right;">Order #${escapeHtml(String(order.orderNumber || order.id.slice(0, 8).toUpperCase()))}<br>${formatDate(order.createdAt)}</div>
       </div>
-
-      <h2>${order.customerName || "Customer"}</h2>
-      <p class="order-meta">📍 ${order.address || ""} &nbsp;·&nbsp; 📞 ${order.mobile || ""} &nbsp;·&nbsp; ${order.paymentMethod === "cod" ? "COD" : "Paid Online"}</p>
-      <p class="order-total-line"><b>Total: ₹${orderTotal}</b></p>
-
-      <div class="order-status-row">
-        <b>Status:</b>
-        <span class="status-pill ${statusClass}">${order.status}</span>
+      <hr>
+      <div class="ship-label-to">
+        <b>DELIVER TO:</b><br>
+        <b>${escapeHtml(order.customerName || "Customer")}</b><br>
+        ${escapeHtml(order.address || "")}<br>
+        📞 ${escapeHtml(order.mobile || "")}
       </div>
-
-      ${renderTracker(order)}
-
-      ${productsHTML}
-
-      ${canCancel ? `<button class="cancel-btn" data-id="${id}">Cancel Order</button>` : ""}
+      <hr>
+      <div class="ship-label-items">
+        ${itemsHTML}
+      </div>
+      <hr>
+      <div class="ship-label-footer">
+        <div>Payment: ${order.paymentMethod === "cod" ? "COD — ₹" + (order.total || 0) : "PREPAID"}</div>
+      </div>
     </div>
   `;
 
 }
 
-// Auth State Monitor
+if (bulkLabelsBtn) {
+  bulkLabelsBtn.addEventListener("click", () => {
+
+    const selectedOrders = allOrders.filter(o => selectedOrderIds.has(o.id));
+    if (!selectedOrders.length) return;
+
+    const labelsHTML = selectedOrders.map(labelHTML).join("");
+
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Shipping Labels</title>
+        <style>
+          body{ font-family: Arial, sans-serif; margin:0; padding:0; }
+          .ship-label{
+            width: 4in; min-height: 5in;
+            padding: 16px; box-sizing: border-box;
+            page-break-after: always;
+            font-size: 13px;
+          }
+          .ship-label-header{ display:flex; justify-content:space-between; font-size:12px; }
+          .ship-label-to{ margin:10px 0; line-height:1.5; }
+          .ship-label-items{ font-size:12px; margin:10px 0; }
+          hr{ border:none; border-top:1px dashed #999; margin:8px 0; }
+          @media print{ .ship-label{ page-break-after: always; } }
+        </style>
+      </head>
+      <body onload="window.print()">
+        ${labelsHTML}
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+
+  });
+}
+
+
+/* =========================
+   APP INIT (ADMIN CHECK)
+========================= */
+
 onAuthStateChanged(auth, async (user) => {
 
   if (!user) {
@@ -142,112 +563,22 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
-  await loadOrders(user);
-
-});
-
-async function loadOrders(user) {
-
   try {
-    const q = query(
-      collection(db, "orders"),
-      where("userId", "==", user.uid)
-    );
 
-    const querySnapshot = await getDocs(q);
+    const userDoc = await getDoc(doc(db, "users", user.uid));
 
-    allOrders = querySnapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
-
-    if (allOrders.length === 0) {
-      ordersDiv.innerHTML = `
-        <div class="no-results">
-          <h2>No Orders Found 📦</h2>
-          <p>Looking like you haven't placed an order yet.</p>
-        </div>`;
+    if (!userDoc.exists() || userDoc.data().isAdmin !== true) {
+      alert("Access Denied ❌");
+      window.location.href = "home.html";
       return;
     }
 
-    renderFilteredOrders();
-
   } catch (error) {
-    console.error("Orders Fetch Error: ", error);
-    alert("Error fetching orders: " + error.message);
-  }
-
-}
-
-function renderFilteredOrders() {
-
-  const statusFilter = orderStatusFilter ? orderStatusFilter.value : "All";
-  const term = orderSearchInput ? orderSearchInput.value.trim().toLowerCase() : "";
-
-  const filtered = allOrders.filter((order) => {
-
-    const matchesStatus = statusFilter === "All" || order.status === statusFilter;
-
-    const matchesTerm = !term || (order.products || []).some(p =>
-      (p.productName || "").toLowerCase().includes(term)
-    );
-
-    return matchesStatus && matchesTerm;
-
-  });
-
-  if (!filtered.length) {
-    ordersDiv.innerHTML = `
-      <div class="no-results">
-        <h2>No orders match this filter</h2>
-        <p>Try a different status or search term.</p>
-      </div>`;
+    console.error("Admin check error:", error);
+    window.location.href = "home.html";
     return;
   }
 
-  ordersDiv.innerHTML = filtered
-    .map((order) => renderOrderCard(order.id, order))
-    .join("");
-
-}
-
-if (orderStatusFilter) orderStatusFilter.addEventListener("change", renderFilteredOrders);
-if (orderSearchInput) orderSearchInput.addEventListener("input", renderFilteredOrders);
-
-ordersDiv.addEventListener("click", async (e) => {
-
-  const cancelBtn = e.target.closest(".cancel-btn");
-
-  if (!cancelBtn) {
-    const productItem = e.target.closest(".product-item");
-    if (productItem && productItem.dataset.productId) {
-      window.location.href = `product.html?id=${productItem.dataset.productId}`;
-    }
-    return;
-  }
-
-  const id = cancelBtn.dataset.id;
-
-  const sure = confirm("Cancel this order?");
-  if (!sure) return;
-
-  try {
-
-    cancelBtn.disabled = true;
-    cancelBtn.textContent = "Cancelling...";
-
-    await updateDoc(doc(db, "orders", id), {
-      status: "Cancelled",
-      cancelledAt: new Date()
-    });
-
-    raiseAdminAlert("order_cancel", `Order cancelled by customer`, {
-      userId: auth.currentUser?.uid,
-      orderId: id
-    });
-
-    await loadOrders(auth.currentUser);
-
-  } catch (error) {
-    console.log(error);
-    alert(error.message);
-  }
+  loadOrders();
 
 });
