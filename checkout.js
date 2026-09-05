@@ -10,7 +10,9 @@ import {
   addDoc,
   deleteDoc,
   doc,
-  getDoc
+  getDoc,
+  updateDoc,
+  increment
 } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
 import {
@@ -258,6 +260,19 @@ form.addEventListener("submit", async (e) => {
         ...extra
 
       });
+
+      // Track this as "pending" on the customer's own balance record
+      // too — this is the aggregate the wallet page reads, separate
+      // from their real/usable walletBalance.
+      if (cashbackAmount > 0) {
+        try {
+          await updateDoc(doc(db, "users", currentUser.uid), {
+            pendingCashbackBalance: increment(cashbackAmount)
+          });
+        } catch (error) {
+          console.log(error);
+        }
+      }
 
       raiseAdminAlert("order", `New order placed by ${customerName || "a customer"} — ₹${totalAmount}`, {
         userId: currentUser.uid,
