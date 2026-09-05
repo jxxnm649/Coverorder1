@@ -22,8 +22,20 @@ const chatReplyForm = document.getElementById("chatReplyForm");
 const chatInput = document.getElementById("chatInput");
 const chatSendBtn = document.getElementById("chatSendBtn");
 
+const mediaBtn = document.getElementById("mediaBtn");
+const imageInput = document.getElementById("imageInput");
+const photoPreviewRow = document.getElementById("photoPreviewRow");
+const photoPreviewImg = document.getElementById("photoPreviewImg");
+const photoPreviewName = document.getElementById("photoPreviewName");
+const photoPreviewRemove = document.getElementById("photoPreviewRemove");
+
+const imgViewer = document.getElementById("imgViewer");
+const imgViewerImg = document.getElementById("imgViewerImg");
+const imgViewerClose = document.getElementById("imgViewerClose");
+
 let currentUser = null;
 let unsubscribeMessages = null;
+let selectedImageFile = null;
 
 function escapeHtml(str) {
   if (typeof str !== "string") return str;
@@ -55,6 +67,7 @@ function renderMessages(messages) {
       <div class="chat-bubble-row ${isMine ? "mine" : "theirs"}">
         <div class="chat-bubble">
           <div class="chat-bubble-text"></div>
+          ${m.imageUrl ? `<img class="chat-bubble-img" src="${m.imageUrl}" alt="Photo">` : ""}
           <div class="chat-bubble-time">${formatTime(m.createdAt)}</div>
         </div>
       </div>
@@ -66,6 +79,13 @@ function renderMessages(messages) {
   const textNodes = chatMessages.querySelectorAll(".chat-bubble-text");
   messages.forEach((m, i) => {
     if (textNodes[i]) textNodes[i].textContent = m.text || "";
+  });
+
+  chatMessages.querySelectorAll(".chat-bubble-img").forEach((img) => {
+    img.addEventListener("click", () => {
+      imgViewerImg.src = img.src;
+      imgViewer.classList.add("show");
+    });
   });
 
   requestAnimationFrame(() => {
@@ -114,6 +134,76 @@ async function ensureChatDoc(user) {
 
 }
 
+/* =========================
+   PHOTO PICKER (real Cloudinary upload, same account already
+   used for product photos elsewhere in the admin panel)
+========================= */
+
+function clearSelectedPhoto() {
+  selectedImageFile = null;
+  imageInput.value = "";
+  photoPreviewRow.classList.remove("show");
+}
+
+mediaBtn.addEventListener("click", () => imageInput.click());
+
+imageInput.addEventListener("change", () => {
+  const file = imageInput.files && imageInput.files[0];
+  if (!file) return;
+
+  selectedImageFile = file;
+  photoPreviewImg.src = URL.createObjectURL(file);
+  photoPreviewName.textContent = file.name;
+  photoPreviewRow.classList.add("show");
+});
+
+photoPreviewRemove.addEventListener("click", clearSelectedPhoto);
+
+async function uploadChatImage(file) {
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", "Bestifyimg");
+
+  const response = await fetch(
+    "https://api.cloudinary.com/v1_1/rgksliph/image/upload",
+    { method: "POST", body: formData }
+  );
+
+  const data = await response.json();
+
+  if (!data.secure_url) {
+    throw new Error("Photo upload failed. Please try again.");
+  }
+
+  return data.secure_url;
+
+}
+
+
+/* =========================
+   QUICK REPLY CHIPS — just fill the input, the person still
+   presses Send (never auto-sent, never a fake canned reply).
+========================= */
+
+document.querySelectorAll(".chip").forEach((chip) => {
+  chip.addEventListener("click", () => {
+    chatInput.value = chip.dataset.text || chip.textContent;
+    chatInput.focus();
+  });
+});
+
+
+/* =========================
+   FULLSCREEN IMAGE VIEWER
+========================= */
+
+imgViewerClose.addEventListener("click", () => imgViewer.classList.remove("show"));
+imgViewer.addEventListener("click", (e) => {
+  if (e.target === imgViewer) imgViewer.classList.remove("show");
+});
+
+
 chatReplyForm.addEventListener("submit", async (e) => {
 
   e.preventDefault();
@@ -121,23 +211,35 @@ chatReplyForm.addEventListener("submit", async (e) => {
   if (chatSendBtn.disabled) return; // ignore double-tap while a send is in flight
 
   const text = chatInput.value.trim();
-  if (!text || !currentUser) return;
+  const imageFile = selectedImageFile;
+
+  if (!text && !imageFile) return;
+  if (!currentUser) return;
 
   chatSendBtn.disabled = true;
   chatInput.value = "";
+  clearSelectedPhoto();
 
   try {
 
     await ensureChatDoc(currentUser);
 
+    let imageUrl = null;
+
+    if (imageFile) {
+      chatSendBtn.querySelector("span").textContent = "Uploading...";
+      imageUrl = await uploadChatImage(imageFile);
+    }
+
     await addDoc(collection(db, "chats", currentUser.uid, "messages"), {
       sender: "user",
       text,
+      ...(imageUrl ? { imageUrl } : {}),
       createdAt: serverTimestamp()
     });
 
     await updateDoc(doc(db, "chats", currentUser.uid), {
-      lastMessage: text,
+      lastMessage: text || "📷 Photo",
       lastMessageAt: serverTimestamp(),
       status: "Open"
     });
@@ -148,6 +250,7 @@ chatReplyForm.addEventListener("submit", async (e) => {
     chatInput.value = text; // restore so the user doesn't lose what they typed
   } finally {
     chatSendBtn.disabled = false;
+    chatSendBtn.querySelector("span").textContent = "Send";
   }
 
 });
