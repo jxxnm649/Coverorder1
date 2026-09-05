@@ -129,13 +129,42 @@ async function renderSummary() {
 
   const total = calcTotal(products);
 
-  summaryEl.innerHTML = `
-    ${products.map(p => `
-      <div class="summary-row">
-        <span>${p.productName} ${p.qty > 1 ? `× ${p.qty}` : ""}${(p.selectedSize || p.selectedColour) ? ` <small style="color:var(--ink-soft);">(${[p.selectedSize, p.selectedColour].filter(Boolean).join(", ")})</small>` : ""}</span>
-        <span>₹${Number(p.price) * Number(p.qty || 1)}</span>
+  let totalSavings = 0;
+
+  const rowsHtml = products.map(p => {
+
+    const qty = Number(p.qty || 1);
+    const price = Number(p.price) || 0;
+    const mrp = Number(p.mrp) || 0;
+    const hasDiscount = mrp > price;
+    const lineTotal = price * qty;
+
+    if (hasDiscount) totalSavings += (mrp - price) * qty;
+
+    const variantText = (p.selectedSize || p.selectedColour)
+      ? ` <small style="color:var(--ink-soft,#888);">(${[p.selectedSize, p.selectedColour].filter(Boolean).join(", ")})</small>`
+      : "";
+
+    return `
+      <div class="summary-row" style="align-items:center;gap:10px;">
+        ${p.image ? `<img src="${p.image}" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex-shrink:0;">` : ""}
+        <span style="flex:1;min-width:0;">
+          ${p.productName || "Product"}${qty > 1 ? ` × ${qty}` : ""}${variantText}
+          ${hasDiscount ? `<br><span style="font-size:11px;"><span style="text-decoration:line-through;color:#999;">₹${mrp * qty}</span> <span style="color:#16a34a;font-weight:700;">Saved ₹${(mrp - price) * qty}</span></span>` : ""}
+        </span>
+        <span style="flex-shrink:0;font-weight:600;">₹${lineTotal}</span>
       </div>
-    `).join("")}
+    `;
+  }).join("");
+
+  summaryEl.innerHTML = `
+    ${rowsHtml}
+    ${totalSavings > 0 ? `
+      <div class="summary-row" style="color:#16a34a;font-weight:600;">
+        <span>Total Savings</span>
+        <span>− ₹${totalSavings}</span>
+      </div>
+    ` : ""}
     <div class="summary-row summary-total">
       <span>Total</span>
       <span>₹${total}</span>
