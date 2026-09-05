@@ -173,6 +173,35 @@ async function renderSummary() {
 
 }
 
+// Reads the admin-configured cashback rate/cap (Settings → Cashback
+// Rewards) and applies it to this order's total. Not a fixed/hardcoded
+// rate — an admin can turn it off, or change the rate, and it takes
+// effect on the next order placed after that change.
+async function computeCashbackAmount(totalAmount) {
+
+  try {
+
+    const settingsSnap = await getDoc(doc(db, "settings", "store"));
+    if (!settingsSnap.exists()) return 0;
+
+    const settings = settingsSnap.data();
+    if (settings.cashbackEnabled !== true) return 0;
+
+    const ratePercent = Number(settings.cashbackRatePercent) || 0;
+    const maxAmount = Number(settings.cashbackMaxAmount) || 0;
+
+    let amount = Math.round(totalAmount * (ratePercent / 100));
+    if (maxAmount > 0) amount = Math.min(amount, maxAmount);
+
+    return Math.max(0, amount);
+
+  } catch (error) {
+    console.log(error);
+    return 0;
+  }
+
+}
+
 form.addEventListener("submit", async (e) => {
 
   e.preventDefault();
@@ -205,10 +234,11 @@ form.addEventListener("submit", async (e) => {
 
       const orderNumber = await nextSequenceNumber("orders");
 
-      // Cashback: a fixed, order-value-based rate (not a random/lucky-
-      // draw amount) — credited for real to the customer's wallet only
-      // once the admin marks the order Delivered (see admin/orders.js).
-      const cashbackAmount = Math.min(Math.round(totalAmount * 0.05), 100);
+      // Cashback: rate is admin-configured (Settings → Cashback
+      // Rewards), read live so a rate change applies to every new
+      // order from that point on. If the admin hasn't turned it on,
+      // no cashback is attached — nothing carries over silently.
+      const cashbackAmount = await computeCashbackAmount(totalAmount);
 
       const orderRef = await addDoc(collection(db, "orders"), {
 
