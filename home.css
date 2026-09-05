@@ -7,135 +7,100 @@ body{
     background: #ffffff;
 }
 
-/* ---------- Brand header (text logo + menu button) ---------- */
-.brand-header{
+/* ---------- Top header (dark, animated brand + Find Fit) ---------- */
+.top-header{
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 18px;
+    padding: 16px 20px;
     margin: 12px 0 4px;
     border-radius: var(--radius);
-    background: linear-gradient(120deg, var(--ink) 0%, var(--ink-soft) 100%);
-    box-shadow: var(--shadow);
+    background: #1e293b;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
 }
 
-.brand-text{
+.brand-name{
     font-family: var(--font-display);
-    font-size: 22px;
-    font-weight: 700;
-    color: #fff;
+    font-size: 20px;
+    font-weight: 800;
     letter-spacing: -0.02em;
+    background: linear-gradient(90deg, #ff7e5f, #feb47b, #00f2fe, #4facfe, #ff7e5f);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: gradientGlow 4s ease infinite;
+    display: inline-block;
 }
 
-.menu-toggle{
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.15);
+@keyframes gradientGlow{
+    0%{ background-position: 0% 50%; }
+    50%{ background-position: 100% 50%; }
+    100%{ background-position: 0% 50%; }
+}
+
+.find-fit-btn{
+    background: linear-gradient(135deg, var(--marigold), var(--marigold-deep));
+    color: #0f172a;
     border: none;
-    color: #fff;
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    flex-shrink: 0;
-}
-
-/* ---------- Header actions wrapper (offer + menu) ---------- */
-.brand-header-actions{
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-/* ---------- Offer button ---------- */
-.offer-btn{
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 2px;
-    background: var(--marigold);
-    color: var(--ink);
     text-decoration: none;
+    padding: 10px 16px;
     border-radius: 12px;
-    padding: 8px 12px;
-    font-size: 10px;
     font-weight: 800;
-    letter-spacing: .02em;
-    line-height: 1;
-    flex-shrink: 0;
-}
-
-.offer-btn i{
-    font-size: 15px;
-    margin-bottom: 2px;
-}
-
-.offer-btn-badge{
-    position: absolute;
-    top: -6px;
-    right: -6px;
-    background: #E53935;
-    color: #fff;
-    border-radius: 50%;
-    width: 18px;
-    height: 18px;
+    font-size: 12.5px;
     display: flex;
     align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    font-weight: 800;
-    border: 2px solid var(--ink);
-}
-
-/* ---------- Menu dropdown (social links) ---------- */
-.menu-dropdown{
-    max-height: 0;
-    overflow: hidden;
-    opacity: 0;
-    transform: translateY(-6px);
-    transition: max-height .25s ease, opacity .2s ease, transform .2s ease, margin .25s ease;
-    display: flex;
-    flex-direction: column;
     gap: 6px;
-    border-radius: var(--radius);
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(242,169,59,0.35);
+    flex-shrink: 0;
+}
+.find-fit-btn:active{ transform: scale(0.96); }
+
+/* ---------- Auto-rotating banner (real offers + real social links) ---------- */
+.banner-slider-box{
+    margin: 12px 0 4px;
     background: var(--card);
     border: 1px solid var(--line);
-}
-
-.menu-dropdown.open{
-    max-height: 320px;
-    opacity: 1;
-    transform: translateY(0);
-    margin: 6px 0 12px;
-    padding: 8px;
-}
-
-.menu-link{
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+    height: 60px;
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 10px;
-    border-radius: 10px;
+}
+
+.slide-item{
+    position: absolute;
+    left: 18px;
+    right: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity .5s ease, transform .5s cubic-bezier(0.4,0,0.2,1);
     text-decoration: none;
-    color: var(--ink);
-    font-size: 14px;
-    font-weight: 600;
+    pointer-events: none;
+}
+.slide-item.active{
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
 }
 
-.menu-link:hover, .menu-link:active{
-    background: var(--paper-dim);
-}
+.slide-content{ display: flex; align-items: center; gap: 12px; min-width: 0; }
+.slide-icon{ font-size: 22px; flex-shrink: 0; }
+.slide-text h4{ font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.slide-text p{ font-size: 11px; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.action-arrow{ color: var(--ink-soft); font-size: 13px; flex-shrink: 0; }
 
-.menu-link i{
-    font-size: 20px;
-    width: 24px;
-    text-align: center;
-    flex-shrink: 0;
-}
+.whatsapp-icon{ color: #25d366; }
+.instagram-icon{ color: #e1306c; }
+.youtube-icon{ color: #ff0000; }
+.store-icon{ color: var(--marigold-deep); }
 
 .container{
     max-width: 900px;
