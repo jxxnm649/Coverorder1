@@ -391,11 +391,12 @@ body{
 .bf-card{
     background: #ffffff;
     border-radius: 16px;
-    padding: 16px;
+    padding: 0 0 16px;
     width: 100%;
     box-shadow: 0 4px 16px rgba(0,0,0,0.06);
     position: relative;
     border: 1px solid #eef2f5;
+    overflow: hidden;
 }
 
 .bf-sale-badge{
@@ -415,7 +416,6 @@ body{
     width: 100%;
     aspect-ratio: 1 / 1;
     overflow: hidden;
-    border-radius: 12px;
     margin-bottom: 14px;
     background-color: #f8f9fa;
 }
@@ -432,9 +432,10 @@ body{
     font-weight: 700;
     color: #1a1a1a;
     margin-bottom: 6px;
+    padding: 0 16px;
 }
 
-.bf-price-section{ margin: 10px 0; }
+.bf-price-section{ margin: 10px 0; padding: 0 16px; }
 
 .bf-price-row{
     display: flex;
@@ -492,6 +493,7 @@ body{
     display: flex;
     gap: 12px;
     align-items: center;
+    padding: 0 16px;
 }
 
 .bf-btn-cart{
