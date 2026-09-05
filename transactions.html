@@ -19,7 +19,8 @@
       <div class="wallet-info">
         <p>Total Balance</p>
         <h2 id="currentBalance">₹0</h2>
-        <div class="wallet-sub">
+        <!-- In/Out counts hidden but still tracked (used elsewhere) -->
+        <div class="wallet-sub" style="display:none;">
           <span class="txn-in">↓ In: <b id="totalIn">₹0</b></span>
           <span class="txn-out">↑ Out: <b id="totalOut">₹0</b></span>
         </div>
@@ -55,11 +56,15 @@
     <div class="txn-date-row">
       <div class="txn-field">
         <label>From</label>
-        <input type="date" id="fromDate">
+        <div class="txn-field-input-wrap">
+          <input type="date" id="fromDate">
+        </div>
       </div>
       <div class="txn-field">
         <label>To</label>
-        <input type="date" id="toDate">
+        <div class="txn-field-input-wrap">
+          <input type="date" id="toDate">
+        </div>
       </div>
       <button type="button" id="clearFilters" class="txn-clear-btn">Clear</button>
     </div>
