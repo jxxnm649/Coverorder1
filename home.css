@@ -713,10 +713,30 @@ body.bf-has-nav{ padding-bottom: 90px; }
 .catalog-price{ color: var(--rust); font-size: 13px; font-weight: 800; }
 .catalog-mrp{ color: var(--ink-soft); font-size: 10px; text-decoration: line-through; }
 
-.catalog-buy-btn{
+.catalog-btn-row{
     display: none;
+    gap: 10px;
+    align-items: center;
     width: 100%;
     margin-top: 8px;
+}
+body.show-buy-btn .catalog-btn-row{ display: flex; }
+
+.catalog-add-btn{
+    flex: 1;
+    padding: 11px 0;
+    background: #ffffff;
+    color: #2e7d32;
+    border: 2px solid #2e7d32;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: var(--font-body);
+}
+
+.catalog-buy-btn{
+    flex: 1.4;
     padding: 12px 0;
     background: #2e7d32;
     color: #ffffff;
@@ -728,4 +748,3 @@ body.bf-has-nav{ padding-bottom: 90px; }
     cursor: pointer;
     font-family: var(--font-body);
 }
-body.show-buy-btn .catalog-buy-btn{ display: block; }
