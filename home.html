@@ -93,15 +93,28 @@
         <!-- Categories -->
         <div class="category-bar" id="categoryBar"></div>
 
+        <!-- Grid size control (drag or pinch on the grid below) -->
+        <div class="zoom-control">
+            <span>🔎 Size:</span>
+            <input type="range" id="zoomSlider" min="140" max="280" value="170">
+        </div>
+
+        <!-- View mode (real data: date placed, real category, real wishlist "interest") -->
+        <div class="filter-options-bar" id="filterOptionsBar">
+            <button type="button" class="filter-option-btn active" data-mode="all">🛍️ All Products</button>
+            <button type="button" class="filter-option-btn" data-mode="date">📅 Date Wise</button>
+            <button type="button" class="filter-option-btn" data-mode="category">🏷️ Category Wise</button>
+            <button type="button" class="filter-option-btn" data-mode="interest">❤️ Liked First</button>
+        </div>
+
         <!-- Featured / Best Sellers -->
         <h2 id="featuredTitle" class="section-title" style="display:none;">⭐ Best Sellers</h2>
         <div id="featuredContainer" class="products"></div>
 
         <!-- Products -->
-        <h2 class="section-title">Our Products</h2>
+        <h2 class="section-title" id="productsSectionTitle">Our Products</h2>
 
-        <div id="productContainer" class="products">
-        </div>
+        <div id="displayArea"></div>
 
         <!-- Contact / Visit Us Footer -->
         <div class="shop-footer">
@@ -129,25 +142,36 @@
         </div>
     </div>
 
+    <!-- Quick preview modal -->
+    <div class="catalog-modal" id="catalogModal">
+        <span class="catalog-modal-close" id="catalogModalClose">&times;</span>
+        <img id="catalogModalImg" src="" alt="">
+        <div class="catalog-modal-title" id="catalogModalTitle"></div>
+        <div class="catalog-modal-price" id="catalogModalPrice"></div>
+        <a class="catalog-modal-view-btn" id="catalogModalViewBtn" href="#">View Product</a>
+    </div>
+
     <!-- Bottom Navigation -->
-    <nav class="bottom-nav">
+    <nav class="bottom-nav-container">
 
-        <a href="home.html" class="active">
-            <span>🏠</span>
-            <p>Home</p>
+        <a href="home.html" class="fnav-item active">
+            <span class="fnav-icon">🏪</span>
+            <span>Store</span>
         </a>
 
-        <a href="wishlist.html">
-            <span>😊</span>
-            <p>Liked</p>
+        <a href="wishlist.html" class="fnav-item">
+            <span class="fnav-icon">👍</span>
+            <span>Liked</span>
         </a>
 
-        <a href="orders.html">
-            <span>📦</span>
-            <p>Orders</p>
+        <a href="orders.html" class="fnav-item">
+            <span class="fnav-icon">🛍️</span>
+            <span>Orders</span>
         </a>
 
-        <a href="profile.html"><span>🏪</span><p>My Account</p></a>
+        <a href="profile.html" class="fnav-avatar" id="fnavAvatarWrap" aria-label="My Account">
+            <span class="fnav-avatar-inner" id="fnavAvatarInner">·</span>
+        </a>
 
     </nav>
 
