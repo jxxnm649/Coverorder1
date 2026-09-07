@@ -206,7 +206,10 @@ function catalogCardHTML(p) {
         <span class="catalog-price">₹${price}</span>
         ${hasDiscount ? `<span class="catalog-mrp">₹${mrp}</span>` : ""}
       </div>
-      <button class="catalog-buy-btn" data-id="${p.id}" ${outOfStock ? "disabled" : ""}>${outOfStock ? "Out of Stock" : "BUY NOW"}</button>
+      <div class="catalog-btn-row">
+        <button class="catalog-add-btn" data-id="${p.id}" ${outOfStock ? "disabled" : ""}>🛒 Add</button>
+        <button class="catalog-buy-btn" data-id="${p.id}" ${outOfStock ? "disabled" : ""}>${outOfStock ? "Out of Stock" : "BUY NOW"}</button>
+      </div>
     </div>
   `;
 }
@@ -295,6 +298,14 @@ function attachCardEvents(container) {
 // ---------- Catalog grid clicks (direct navigate — no popup) ----------
 function attachCatalogEvents(container) {
   container.addEventListener("click", (e) => {
+
+    const addBtn = e.target.closest(".catalog-add-btn");
+    if (addBtn) {
+      e.stopPropagation();
+      if (addBtn.disabled) return;
+      handleAddToCart(addBtn.dataset.id);
+      return;
+    }
 
     const buyBtn = e.target.closest(".catalog-buy-btn");
     if (buyBtn) {
