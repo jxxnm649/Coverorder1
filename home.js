@@ -292,46 +292,28 @@ function attachCardEvents(container) {
   });
 }
 
-attachCardEvents(featuredContainer);
+// ---------- Catalog grid clicks (direct navigate — no popup) ----------
+function attachCatalogEvents(container) {
+  container.addEventListener("click", (e) => {
 
-// ---------- Catalog grid clicks (modal preview + Buy Now) ----------
-const catalogModal = document.getElementById("catalogModal");
-const catalogModalClose = document.getElementById("catalogModalClose");
+    const buyBtn = e.target.closest(".catalog-buy-btn");
+    if (buyBtn) {
+      e.stopPropagation();
+      if (buyBtn.disabled) return;
+      window.location.href = `checkout.html?productId=${buyBtn.dataset.id}`;
+      return;
+    }
 
-function openCatalogPreview(p) {
-  document.getElementById("catalogModalImg").src = p.image;
-  document.getElementById("catalogModalTitle").textContent = p.productName;
-  document.getElementById("catalogModalPrice").textContent = `₹${p.price}`;
-  document.getElementById("catalogModalViewBtn").href = `product.html?id=${p.id}`;
-  catalogModal.classList.add("show");
-}
+    const item = e.target.closest(".catalog-item");
+    if (item) {
+      window.location.href = `product.html?id=${item.dataset.id}`;
+    }
 
-if (catalogModalClose) {
-  catalogModalClose.addEventListener("click", () => catalogModal.classList.remove("show"));
-}
-if (catalogModal) {
-  catalogModal.addEventListener("click", (e) => {
-    if (e.target === catalogModal) catalogModal.classList.remove("show");
   });
 }
 
-displayArea.addEventListener("click", (e) => {
-
-  const buyBtn = e.target.closest(".catalog-buy-btn");
-  if (buyBtn) {
-    e.stopPropagation();
-    if (buyBtn.disabled) return;
-    window.location.href = `checkout.html?productId=${buyBtn.dataset.id}`;
-    return;
-  }
-
-  const item = e.target.closest(".catalog-item");
-  if (item) {
-    const p = allProducts.find(pr => pr.id === item.dataset.id);
-    if (p) openCatalogPreview(p);
-  }
-
-});
+attachCatalogEvents(displayArea);
+attachCatalogEvents(featuredContainer);
 
 // ---------- Category chips ----------
 const categoryIcons = {
@@ -543,7 +525,7 @@ async function loadProducts() {
     featured_cache = allProducts.slice(0, 4);
     if (featured_cache.length > 0) {
       featuredTitle.style.display = "block";
-      featuredContainer.innerHTML = featured_cache.map(productCardHTML).join("");
+      featuredContainer.innerHTML = featured_cache.map(catalogCardHTML).join("");
     }
 
     applyFilters();
