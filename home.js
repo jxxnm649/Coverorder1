@@ -206,7 +206,7 @@ function catalogCardHTML(p) {
         <span class="catalog-price">₹${price}</span>
         ${hasDiscount ? `<span class="catalog-mrp">₹${mrp}</span>` : ""}
       </div>
-      <button class="catalog-buy-btn" data-id="${p.id}" ${outOfStock ? "disabled" : ""}>${outOfStock ? "Out of Stock" : "⚡ BUY NOW"}</button>
+      <button class="catalog-buy-btn" data-id="${p.id}" ${outOfStock ? "disabled" : ""}>${outOfStock ? "Out of Stock" : "BUY NOW"}</button>
     </div>
   `;
 }
