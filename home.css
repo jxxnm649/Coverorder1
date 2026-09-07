@@ -713,6 +713,12 @@ body.bf-has-nav{ padding-bottom: 90px; }
 .catalog-price{ color: var(--rust); font-size: 13px; font-weight: 800; }
 .catalog-mrp{ color: var(--ink-soft); font-size: 10px; text-decoration: line-through; }
 
+/* At large zoom, scale title/price up to match the old full-detail
+   card's sizes, not just the buttons. */
+body.show-buy-btn .catalog-title{ font-size: 18px; font-weight: 700; white-space: normal; }
+body.show-buy-btn .catalog-price{ font-size: 22px; font-weight: 800; }
+body.show-buy-btn .catalog-mrp{ font-size: 15px; }
+
 .catalog-btn-row{
     display: none;
     gap: 10px;
