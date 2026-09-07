@@ -13,16 +13,20 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
 const welcome = document.getElementById("welcome");
-const productContainer = document.getElementById("productContainer");
 const featuredContainer = document.getElementById("featuredContainer");
 const featuredTitle = document.getElementById("featuredTitle");
 const categoryBar = document.getElementById("categoryBar");
 const searchInput = document.getElementById("searchInput");
 const bannerTrack = document.getElementById("bannerTrack");
 const bannerDots = document.getElementById("bannerDots");
+const displayArea = document.getElementById("displayArea");
+const filterOptionsBar = document.getElementById("filterOptionsBar");
+const productsSectionTitle = document.getElementById("productsSectionTitle");
 
 let allProducts = [];
 let activeCategory = "All";
+let activeMode = "all";
+let likedProductIds = new Set(); // real wishlist, used for "Liked First"
 
 // User Details
 onAuthStateChanged(auth, async (user) => {
@@ -55,6 +59,14 @@ onAuthStateChanged(auth, async (user) => {
 
     if (welcome) welcome.innerHTML = `👋 Welcome <b>${user.email}</b>`;
 
+  }
+
+  // Real wishlist — used by the "Liked First" view mode below.
+  try {
+    const wishlistSnap = await getDocs(collection(db, "users", user.uid, "wishlist"));
+    likedProductIds = new Set(wishlistSnap.docs.map(d => d.id));
+  } catch (error) {
+    console.log(error);
   }
 
 });
@@ -167,6 +179,38 @@ function productCardHTML(p) {
   `;
 }
 
+// ---------- Compact catalog card (main product grid) ----------
+function isRecentlyAdded(p) {
+  const ts = p.createdAt;
+  const d = ts?.toDate ? ts.toDate() : (ts ? new Date(ts) : null);
+  if (!d || isNaN(d.getTime())) return false;
+  return (Date.now() - d.getTime()) < 14 * 24 * 60 * 60 * 1000; // real "new" = added in the last 14 days
+}
+
+function catalogCardHTML(p) {
+  const hasStock = typeof p.stock === "number";
+  const outOfStock = hasStock && p.stock === 0;
+
+  const mrp = Number(p.mrp) || 0;
+  const price = Number(p.price) || 0;
+  const hasDiscount = mrp > price;
+
+  return `
+    <div class="catalog-item" data-id="${p.id}">
+      <div class="catalog-img-box">
+        ${isRecentlyAdded(p) ? `<span class="catalog-badge-new">NEW</span>` : ""}
+        <img src="${p.image}" alt="${escapeAttr(p.productName)}">
+      </div>
+      <div class="catalog-title">${p.productName}</div>
+      <div class="catalog-price-row">
+        <span class="catalog-price">₹${price}</span>
+        ${hasDiscount ? `<span class="catalog-mrp">₹${mrp}</span>` : ""}
+      </div>
+      <button class="catalog-buy-btn" data-id="${p.id}" ${outOfStock ? "disabled" : ""}>${outOfStock ? "Out of Stock" : "⚡ BUY NOW"}</button>
+    </div>
+  `;
+}
+
 // ---------- Add to cart (from card) ----------
 async function handleAddToCart(id) {
 
@@ -248,8 +292,46 @@ function attachCardEvents(container) {
   });
 }
 
-attachCardEvents(productContainer);
 attachCardEvents(featuredContainer);
+
+// ---------- Catalog grid clicks (modal preview + Buy Now) ----------
+const catalogModal = document.getElementById("catalogModal");
+const catalogModalClose = document.getElementById("catalogModalClose");
+
+function openCatalogPreview(p) {
+  document.getElementById("catalogModalImg").src = p.image;
+  document.getElementById("catalogModalTitle").textContent = p.productName;
+  document.getElementById("catalogModalPrice").textContent = `₹${p.price}`;
+  document.getElementById("catalogModalViewBtn").href = `product.html?id=${p.id}`;
+  catalogModal.classList.add("show");
+}
+
+if (catalogModalClose) {
+  catalogModalClose.addEventListener("click", () => catalogModal.classList.remove("show"));
+}
+if (catalogModal) {
+  catalogModal.addEventListener("click", (e) => {
+    if (e.target === catalogModal) catalogModal.classList.remove("show");
+  });
+}
+
+displayArea.addEventListener("click", (e) => {
+
+  const buyBtn = e.target.closest(".catalog-buy-btn");
+  if (buyBtn) {
+    e.stopPropagation();
+    if (buyBtn.disabled) return;
+    window.location.href = `checkout.html?productId=${buyBtn.dataset.id}`;
+    return;
+  }
+
+  const item = e.target.closest(".catalog-item");
+  if (item) {
+    const p = allProducts.find(pr => pr.id === item.dataset.id);
+    if (p) openCatalogPreview(p);
+  }
+
+});
 
 // ---------- Category chips ----------
 const categoryIcons = {
@@ -338,11 +420,79 @@ function applyFilters() {
   }
 
   if (filtered.length === 0) {
-    productContainer.innerHTML = `<p class="no-results">No products found 😔</p>`;
+    displayArea.innerHTML = `<p class="no-results">No products found 😔</p>`;
     return;
   }
 
-  productContainer.innerHTML = filtered.map(productCardHTML).join("");
+  renderDisplay(filtered);
+}
+
+// ---------- View modes: All / Date Wise / Category Wise / Liked First
+// (all built from real product + real wishlist data — nothing fake) ----------
+function renderDisplay(products) {
+
+  if (activeMode === "date") {
+
+    const groups = new Map(); // label -> products[]
+    products.forEach(p => {
+      const ts = p.createdAt;
+      const d = ts?.toDate ? ts.toDate() : (ts ? new Date(ts) : null);
+      const label = (d && !isNaN(d.getTime()))
+        ? d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+        : "Date not available";
+      if (!groups.has(label)) groups.set(label, []);
+      groups.get(label).push(p);
+    });
+
+    displayArea.innerHTML = [...groups.entries()].map(([label, items]) => `
+      <div class="date-section-title">📅 ${label}</div>
+      <div class="catalog-grid">${items.map(catalogCardHTML).join("")}</div>
+    `).join("");
+
+  } else if (activeMode === "category") {
+
+    const groups = new Map();
+    products.forEach(p => {
+      const label = (p.category || "").toString().trim() || "Uncategorized";
+      if (!groups.has(label)) groups.set(label, []);
+      groups.get(label).push(p);
+    });
+
+    displayArea.innerHTML = [...groups.entries()].map(([label, items]) => `
+      <div class="date-section-title">🏷️ ${label}</div>
+      <div class="catalog-grid">${items.map(catalogCardHTML).join("")}</div>
+    `).join("");
+
+  } else if (activeMode === "interest") {
+
+    // Real signal: this customer's own wishlist, not fake "trending" data.
+    const liked = products.filter(p => likedProductIds.has(p.id));
+    const rest = products.filter(p => !likedProductIds.has(p.id));
+
+    let html = "";
+    if (liked.length) {
+      html += `<div class="date-section-title">❤️ From your Liked list</div><div class="catalog-grid">${liked.map(catalogCardHTML).join("")}</div>`;
+    }
+    html += `<div class="date-section-title">${liked.length ? "🛍️ More products" : "🛍️ All products"}</div><div class="catalog-grid">${rest.map(catalogCardHTML).join("")}</div>`;
+    displayArea.innerHTML = html;
+
+  } else {
+
+    displayArea.innerHTML = `<div class="catalog-grid">${products.map(catalogCardHTML).join("")}</div>`;
+
+  }
+
+}
+
+if (filterOptionsBar) {
+  filterOptionsBar.addEventListener("click", (e) => {
+    const btn = e.target.closest(".filter-option-btn");
+    if (!btn) return;
+
+    activeMode = btn.dataset.mode;
+    [...filterOptionsBar.children].forEach(b => b.classList.toggle("active", b === btn));
+    applyFilters();
+  });
 }
 
 let featured_cache = [];
@@ -350,7 +500,8 @@ let featured_cache = [];
 // ---------- Load Products ----------
 async function loadProducts() {
 
-  renderSkeletons(productContainer, 4);
+  displayArea.innerHTML = `<div class="catalog-grid"></div>`;
+  renderSkeletons(featuredContainer, 4);
 
   try {
 
@@ -359,7 +510,8 @@ async function loadProducts() {
     console.log("Products Found :", snapshot.size);
 
     if (snapshot.empty) {
-      productContainer.innerHTML = `<p class="no-results">No Products Found</p>`;
+      displayArea.innerHTML = `<p class="no-results">No Products Found</p>`;
+      if (featuredContainer) featuredContainer.innerHTML = "";
       return;
     }
 
@@ -400,7 +552,7 @@ async function loadProducts() {
 
     console.log(error);
 
-    productContainer.innerHTML = `<p class="no-results">Error loading products</p>`;
+    displayArea.innerHTML = `<p class="no-results">Error loading products</p>`;
 
   }
 
@@ -418,6 +570,9 @@ const zoomSlider = document.getElementById("zoomSlider");
 
 function setCardSize(px) {
   document.documentElement.style.setProperty("--card-min-width", px + "px");
+  // At larger card sizes there's room to show the Buy Now button
+  // right on the card, matching the reference's zoom-reveals-button UX.
+  document.body.classList.toggle("show-buy-btn", Number(px) >= 190);
 }
 
 if (zoomSlider) {
