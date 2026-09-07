@@ -407,3 +407,77 @@ async function loadProducts() {
 }
 
 loadProducts();
+
+
+/* =========================
+   GRID SIZE CONTROL — slider + pinch-to-zoom
+   (pure display preference, no data involved)
+========================= */
+
+const zoomSlider = document.getElementById("zoomSlider");
+
+function setCardSize(px) {
+  document.documentElement.style.setProperty("--card-min-width", px + "px");
+}
+
+if (zoomSlider) {
+  setCardSize(zoomSlider.value);
+  zoomSlider.addEventListener("input", () => setCardSize(zoomSlider.value));
+
+  // Two-finger pinch over the products grid also resizes the cards.
+  let pinchStartDist = null;
+  let pinchStartWidth = Number(zoomSlider.value);
+  const MIN_WIDTH = Number(zoomSlider.min);
+  const MAX_WIDTH = Number(zoomSlider.max);
+
+  document.addEventListener("touchmove", (e) => {
+    if (e.touches.length !== 2) return;
+
+    const dist = Math.hypot(
+      e.touches[0].pageX - e.touches[1].pageX,
+      e.touches[0].pageY - e.touches[1].pageY
+    );
+
+    if (pinchStartDist === null) {
+      pinchStartDist = dist;
+      pinchStartWidth = Number(zoomSlider.value);
+      return;
+    }
+
+    const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, pinchStartWidth * (dist / pinchStartDist)));
+    zoomSlider.value = newWidth;
+    setCardSize(newWidth);
+
+  }, { passive: true });
+
+  document.addEventListener("touchend", (e) => {
+    if (e.touches.length < 2) pinchStartDist = null;
+  });
+}
+
+
+/* =========================
+   FLOATING NAV — real profile avatar (photo if set, else
+   initials), same source of truth as profile-menu.js's nav icon.
+========================= */
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) return;
+
+  const avatarInner = document.getElementById("fnavAvatarInner");
+  if (!avatarInner) return;
+
+  try {
+    const snap = await getDoc(doc(db, "users", user.uid));
+    const data = snap.exists() ? snap.data() : {};
+    const seed = data.name || user.email || "U";
+
+    if (data.profilePicture) {
+      avatarInner.innerHTML = `<img src="${data.profilePicture}" alt="My Account">`;
+    } else {
+      avatarInner.textContent = seed.charAt(0).toUpperCase();
+    }
+  } catch (error) {
+    console.log(error);
+  }
+});
