@@ -7,7 +7,7 @@ body{
     background: #ffffff;
 }
 
-/* ---------- Top header (dark, animated brand + Find Fit) ---------- */
+/* ---------- Top header (brand + Find Fit) ---------- */
 .top-header{
     display: flex;
     align-items: center;
@@ -15,28 +15,35 @@ body{
     padding: 16px 20px;
     margin: 12px 0 4px;
     border-radius: var(--radius);
-    background: #1e293b;
-    border: 1px solid rgba(255,255,255,0.08);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    background: var(--card);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-sm);
 }
 
 .brand-name{
     font-family: var(--font-display);
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 800;
     letter-spacing: -0.02em;
-    background: linear-gradient(90deg, #ff7e5f, #feb47b, #00f2fe, #4facfe, #ff7e5f);
-    background-size: 300% 100%;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: gradientGlow 4s ease infinite;
-    display: inline-block;
 }
 
-@keyframes gradientGlow{
-    0%{ background-position: 0% 50%; }
-    50%{ background-position: 100% 50%; }
-    100%{ background-position: 0% 50%; }
+.brand-name-bestify{ color: #4c6ef5; }
+.brand-name-mobile{ color: #ff6b6b; }
+
+/* ---------- Real shop photo ---------- */
+.shop-photo-box{
+    margin: 4px 0 4px;
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-sm);
+}
+.shop-photo-box img{
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    display: block;
+    background: var(--paper-dim);
 }
 
 .find-fit-btn{
@@ -339,15 +346,11 @@ body{
 
 /* ---------- Bestify product card (single column, green accent) ---------- */
 .products, .products-grid{
-    grid-template-columns: 1fr !important;
-    gap: 20px !important;
+    grid-template-columns: repeat(auto-fill, minmax(var(--card-min-width, 170px), 1fr)) !important;
+    gap: 16px !important;
 }
 
 @media (min-width: 480px){
-    .products, .products-grid{
-        grid-template-columns: 1fr 1fr !important;
-        gap: 16px !important;
-    }
     .bf-carousel{ aspect-ratio: 1 / 1; }
     .bf-title{ font-size: 15px; }
     .bf-current-price{ font-size: 18px; }
@@ -506,3 +509,94 @@ body{
 .bf-btn-cart:disabled, .bf-btn-buy:disabled{
     opacity: 0.5;
 }
+
+/* ---------- Grid size (zoom) control ---------- */
+.zoom-control{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--paper-dim);
+    border: 1px solid var(--line);
+    padding: 8px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: var(--ink-soft);
+    font-weight: 600;
+    margin-bottom: 14px;
+}
+.zoom-control input{
+    flex: 1;
+    accent-color: var(--marigold-deep);
+    cursor: pointer;
+}
+
+/* ---------- Floating pill bottom nav ---------- */
+.bottom-nav-container{
+    position: fixed;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 92%;
+    max-width: 460px;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 35px;
+    border: 1px solid var(--line);
+    padding: 6px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 10px 30px rgba(15,23,42,0.12);
+    z-index: 1000;
+}
+
+.fnav-item{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--ink-soft);
+    font-size: 11px;
+    font-weight: 700;
+    gap: 2px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    text-decoration: none;
+}
+.fnav-icon{ font-size: 20px; }
+.fnav-item.active{ color: var(--marigold-deep); }
+
+.fnav-avatar{
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    padding: 2px;
+    background: linear-gradient(135deg, var(--marigold), var(--marigold-deep));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+.fnav-avatar-inner{
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: var(--ink);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 800;
+    text-transform: uppercase;
+    border: 1.5px solid #fff;
+    overflow: hidden;
+}
+.fnav-avatar-inner img{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+body.bf-has-nav{ padding-bottom: 90px; }
