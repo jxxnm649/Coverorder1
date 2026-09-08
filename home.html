@@ -27,53 +27,22 @@
             <img src="shop-photos/shop-front.jpg" alt="Bestify Mobile Kolavi — our shop">
         </div>
 
-        <!-- Auto-rotating banner (real store offer + real social links) -->
-        <div class="banner-slider-box" id="bannerSlider">
+        <!-- YouTube card (real link) -->
+        <a href="https://youtube.com/@bestifymobilekolavi" target="_blank" rel="noopener" class="yt-card">
+            <div class="yt-left">
+                <span class="yt-icon">▶</span>
+                <div class="yt-text">
+                    <div>Subscribe on YouTube</div>
+                    <div>Product unboxing &amp; reviews</div>
+                </div>
+            </div>
+            <span>›</span>
+        </a>
 
-            <span class="slide-item active">
-                <span class="slide-content">
-                    <i class="fa-solid fa-mobile-screen-button slide-icon store-icon"></i>
-                    <span class="slide-text">
-                        <h4>Bestify Mobile Offers</h4>
-                        <p id="storeOfferText">Check out our latest deals</p>
-                    </span>
-                </span>
-                <i class="fa-solid fa-chevron-right action-arrow"></i>
-            </span>
-
-            <a href="https://chat.whatsapp.com/Cks7jxkxJJKGBnepHs8U5j" target="_blank" rel="noopener" class="slide-item">
-                <span class="slide-content">
-                    <i class="fa-brands fa-whatsapp slide-icon whatsapp-icon"></i>
-                    <span class="slide-text">
-                        <h4>Join WhatsApp Community</h4>
-                        <p>Get daily new stock updates</p>
-                    </span>
-                </span>
-                <i class="fa-solid fa-chevron-right action-arrow"></i>
-            </a>
-
-            <a href="https://www.instagram.com/bestify_mobile_kolavi" target="_blank" rel="noopener" class="slide-item">
-                <span class="slide-content">
-                    <i class="fa-brands fa-instagram slide-icon instagram-icon"></i>
-                    <span class="slide-text">
-                        <h4>Follow on Instagram</h4>
-                        <p>Watch latest product videos &amp; reels</p>
-                    </span>
-                </span>
-                <i class="fa-solid fa-chevron-right action-arrow"></i>
-            </a>
-
-            <a href="https://youtube.com/@bestifymobilekolavi" target="_blank" rel="noopener" class="slide-item">
-                <span class="slide-content">
-                    <i class="fa-brands fa-youtube slide-icon youtube-icon"></i>
-                    <span class="slide-text">
-                        <h4>Subscribe on YouTube</h4>
-                        <p>Product unboxing &amp; reviews</p>
-                    </span>
-                </span>
-                <i class="fa-solid fa-chevron-right action-arrow"></i>
-            </a>
-
+        <!-- Store offer strip (real — highest current discount) -->
+        <div class="offer-strip">
+            <span>🏷️</span>
+            <span id="storeOfferText">Check out our latest deals</span>
         </div>
 
         <!-- Search -->
@@ -93,10 +62,10 @@
         <!-- Categories -->
         <div class="category-bar" id="categoryBar"></div>
 
-        <!-- Grid size control (drag or pinch on the grid below) -->
+        <!-- Grid / Zoomed view toggle -->
         <div class="zoom-control">
             <span>🔎 Size:</span>
-            <input type="range" id="zoomSlider" min="140" max="280" value="170">
+            <input type="range" id="zoomSlider" min="0" max="1" step="1" value="0">
         </div>
 
         <!-- View mode (real data: date placed, real category, real wishlist "interest") -->
@@ -109,7 +78,7 @@
 
         <!-- Featured / Best Sellers -->
         <h2 id="featuredTitle" class="section-title" style="display:none;">⭐ Best Sellers</h2>
-        <div id="featuredContainer" class="products"></div>
+        <div id="featuredContainer" class="catalog-grid"></div>
 
         <!-- Products -->
         <h2 class="section-title" id="productsSectionTitle">Our Products</h2>
@@ -142,15 +111,6 @@
         </div>
     </div>
 
-    <!-- Quick preview modal -->
-    <div class="catalog-modal" id="catalogModal">
-        <span class="catalog-modal-close" id="catalogModalClose">&times;</span>
-        <img id="catalogModalImg" src="" alt="">
-        <div class="catalog-modal-title" id="catalogModalTitle"></div>
-        <div class="catalog-modal-price" id="catalogModalPrice"></div>
-        <a class="catalog-modal-view-btn" id="catalogModalViewBtn" href="#">View Product</a>
-    </div>
-
     <!-- Bottom Navigation -->
     <nav class="bottom-nav-container">
 
@@ -177,22 +137,6 @@
 
     <script type="module" src="home.js"></script>
     <script type="module" src="profile-menu.js"></script>
-
-    <script>
-        // Auto-rotating banner (store offer + social links)
-        (function () {
-            const slides = document.querySelectorAll("#bannerSlider .slide-item");
-            if (!slides.length) return;
-
-            let currentSlide = 0;
-
-            setInterval(() => {
-                slides[currentSlide].classList.remove("active");
-                currentSlide = (currentSlide + 1) % slides.length;
-                slides[currentSlide].classList.add("active");
-            }, 3000);
-        })();
-    </script>
 
 </body>
 
