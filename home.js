@@ -8,6 +8,7 @@ import {
   doc,
   getDoc,
   setDoc,
+  deleteDoc,
   collection,
   getDocs
 } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
@@ -194,21 +195,45 @@ function catalogCardHTML(p) {
   const mrp = Number(p.mrp) || 0;
   const price = Number(p.price) || 0;
   const hasDiscount = mrp > price;
+  const discountPct = hasDiscount ? Math.round(((mrp - price) / mrp) * 100) : 0;
+
+  // Real image gallery — falls back to the single main image if this
+  // product doesn't have a separate images[] array.
+  const images = (Array.isArray(p.images) && p.images.length) ? p.images : [p.image].filter(Boolean);
+  const isLiked = likedProductIds.has(p.id);
 
   return `
     <div class="catalog-item" data-id="${p.id}">
-      <div class="catalog-img-box">
-        ${isRecentlyAdded(p) ? `<span class="catalog-badge-new">NEW</span>` : ""}
-        <img src="${p.image}" alt="${escapeAttr(p.productName)}">
+      <div class="catalog-img-wrapper">
+        ${hasDiscount ? `<span class="catalog-badge-new">${discountPct}% OFF</span>` : ""}
+        <div class="catalog-img-slider">
+          ${images.map(src => `<img src="${src}" alt="${escapeAttr(p.productName)}">`).join("")}
+        </div>
+        ${images.length > 1 ? `
+          <div class="catalog-slider-dots">
+            ${images.map((_, i) => `<span class="catalog-dot ${i === 0 ? "active" : ""}"></span>`).join("")}
+          </div>
+        ` : ""}
       </div>
-      <div class="catalog-title">${p.productName}</div>
-      <div class="catalog-price-row">
-        <span class="catalog-price">₹${price}</span>
-        ${hasDiscount ? `<span class="catalog-mrp">₹${mrp}</span>` : ""}
-      </div>
-      <div class="catalog-btn-row">
-        <button class="catalog-add-btn" data-id="${p.id}" ${outOfStock ? "disabled" : ""}>🛒 Add</button>
-        <button class="catalog-buy-btn" data-id="${p.id}" ${outOfStock ? "disabled" : ""}>${outOfStock ? "Out of Stock" : "BUY NOW"}</button>
+      <div class="catalog-card-content">
+        <div class="catalog-info-row">
+          <div class="catalog-title-group">
+            <div class="catalog-title">${p.productName}</div>
+            <div class="catalog-price-row">
+              <span class="catalog-price">₹${price}</span>
+              ${hasDiscount ? `<span class="catalog-mrp">₹${mrp}</span>` : ""}
+            </div>
+          </div>
+          <div class="catalog-quick-actions">
+            <button type="button" class="catalog-like-btn ${isLiked ? "liked" : ""}" data-id="${p.id}" aria-label="Like">${isLiked ? "❤️" : "🤍"}</button>
+            <button type="button" class="catalog-share-btn" data-id="${p.id}" data-name="${escapeAttr(p.productName)}" aria-label="Share">📤</button>
+          </div>
+        </div>
+        <div class="catalog-stock-badge">${outOfStock ? "Out of Stock" : "In Stock"}</div>
+        <div class="catalog-btn-row">
+          <button class="catalog-add-btn" data-id="${p.id}" ${outOfStock ? "disabled" : ""}>🛒 Add</button>
+          <button class="catalog-buy-btn" data-id="${p.id}" ${outOfStock ? "disabled" : ""}>${outOfStock ? "Out of Stock" : "BUY NOW"}</button>
+        </div>
       </div>
     </div>
   `;
@@ -297,7 +322,53 @@ function attachCardEvents(container) {
 
 // ---------- Catalog grid clicks (direct navigate — no popup) ----------
 function attachCatalogEvents(container) {
-  container.addEventListener("click", (e) => {
+  container.addEventListener("click", async (e) => {
+
+    const likeBtn = e.target.closest(".catalog-like-btn");
+    if (likeBtn) {
+      e.stopPropagation();
+      const id = likeBtn.dataset.id;
+      const product = allProducts.find(p => p.id === id) || featured_cache.find(p => p.id === id);
+      const user = auth.currentUser;
+      if (!product || !user) return;
+
+      const isLiked = likedProductIds.has(id);
+      likeBtn.disabled = true;
+
+      try {
+        if (isLiked) {
+          await deleteDoc(doc(db, "users", user.uid, "wishlist", id));
+          likedProductIds.delete(id);
+        } else {
+          await setDoc(doc(db, "users", user.uid, "wishlist", id), product);
+          likedProductIds.add(id);
+        }
+        likeBtn.textContent = likedProductIds.has(id) ? "❤️" : "🤍";
+        likeBtn.classList.toggle("liked", likedProductIds.has(id));
+      } catch (error) {
+        console.error(error);
+      } finally {
+        likeBtn.disabled = false;
+      }
+      return;
+    }
+
+    const shareBtn = e.target.closest(".catalog-share-btn");
+    if (shareBtn) {
+      e.stopPropagation();
+      const shareUrl = new URL(`product.html?id=${shareBtn.dataset.id}`, window.location.href).href;
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: shareBtn.dataset.name || "Bestify", text: `Check out ${shareBtn.dataset.name || "this product"} on Bestify`, url: shareUrl });
+        } else {
+          await navigator.clipboard.writeText(shareUrl);
+          alert("Link copied!");
+        }
+      } catch (error) {
+        // cancelled — nothing to do
+      }
+      return;
+    }
 
     const addBtn = e.target.closest(".catalog-add-btn");
     if (addBtn) {
@@ -321,6 +392,16 @@ function attachCatalogEvents(container) {
     }
 
   });
+
+  // Sync the dot indicators as each card's image slider is swiped.
+  container.addEventListener("scroll", (e) => {
+    const slider = e.target.closest(".catalog-img-slider");
+    if (!slider) return;
+    const dots = slider.parentElement.querySelectorAll(".catalog-dot");
+    if (!dots.length) return;
+    const index = Math.round(slider.scrollLeft / slider.clientWidth);
+    dots.forEach((dot, i) => dot.classList.toggle("active", i === index));
+  }, true);
 }
 
 attachCatalogEvents(displayArea);
@@ -555,28 +636,22 @@ loadProducts();
 
 
 /* =========================
-   GRID SIZE CONTROL — slider + pinch-to-zoom
+   GRID / ZOOMED VIEW TOGGLE
    (pure display preference, no data involved)
 ========================= */
 
 const zoomSlider = document.getElementById("zoomSlider");
 
-function setCardSize(px) {
-  document.documentElement.style.setProperty("--card-min-width", px + "px");
-  // At larger card sizes there's room to show the Buy Now button
-  // right on the card, matching the reference's zoom-reveals-button UX.
-  document.body.classList.toggle("show-buy-btn", Number(px) >= 190);
+function setZoomedView(isZoomed) {
+  document.body.classList.toggle("zoomed-in", isZoomed);
 }
 
 if (zoomSlider) {
-  setCardSize(zoomSlider.value);
-  zoomSlider.addEventListener("input", () => setCardSize(zoomSlider.value));
+  setZoomedView(zoomSlider.value === "1");
+  zoomSlider.addEventListener("input", () => setZoomedView(zoomSlider.value === "1"));
 
-  // Two-finger pinch over the products grid also resizes the cards.
+  // Pinch out to zoom in, pinch in to zoom out.
   let pinchStartDist = null;
-  let pinchStartWidth = Number(zoomSlider.value);
-  const MIN_WIDTH = Number(zoomSlider.min);
-  const MAX_WIDTH = Number(zoomSlider.max);
 
   document.addEventListener("touchmove", (e) => {
     if (e.touches.length !== 2) return;
@@ -588,13 +663,18 @@ if (zoomSlider) {
 
     if (pinchStartDist === null) {
       pinchStartDist = dist;
-      pinchStartWidth = Number(zoomSlider.value);
       return;
     }
 
-    const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, pinchStartWidth * (dist / pinchStartDist)));
-    zoomSlider.value = newWidth;
-    setCardSize(newWidth);
+    if (dist - pinchStartDist > 40) {
+      zoomSlider.value = "1";
+      setZoomedView(true);
+      pinchStartDist = dist;
+    } else if (pinchStartDist - dist > 40) {
+      zoomSlider.value = "0";
+      setZoomedView(false);
+      pinchStartDist = dist;
+    }
 
   }, { passive: true });
 
