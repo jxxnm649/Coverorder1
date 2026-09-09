@@ -182,6 +182,7 @@ async function loadProduct() {
   </div>` : ""}
 
   <div class="details-section">
+    <p class="brand-tag">BESTIFY MOBILE</p>
     <p class="product-title">${product.productName}</p>
 
     <div class="horizontal-action-bar">
@@ -204,6 +205,16 @@ async function loadProduct() {
       ${hasDiscount ? `<span class="original-price">₹${mrp}</span><span class="discount">${pct}% off</span>` : ""}
     </div>
     ${hasDiscount ? `<div class="offer-tag">✓ UPI Offer applied for you!!</div>` : ""}
+
+    ${product.warranty && product.warranty !== "No Warranty" ? `
+      <div class="guarantee-box">
+        ${ICONS.shield}
+        <div>
+          <strong>${product.warranty}</strong><br>
+          <span>Brand cover, as listed by the seller</span>
+        </div>
+      </div>
+    ` : ""}
   </div>
 
   <div class="service-section">
