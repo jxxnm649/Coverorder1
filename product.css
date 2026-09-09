@@ -146,6 +146,15 @@ body {
   border-bottom: 8px solid #f4f4f6;
 }
 
+.brand-tag {
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 5px;
+}
+
 .product-title {
   font-size: 20px;
   color: #111827;
@@ -286,6 +295,27 @@ body {
   font-size: 12px;
   font-weight: 600;
   display: inline-block;
+}
+
+.guarantee-box {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  padding: 12px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  color: #065f46;
+  font-size: 13px;
+}
+.guarantee-box svg {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: #065f46;
+  stroke-width: 2;
 }
 
 /* Service Cards Layout */
