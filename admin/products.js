@@ -36,6 +36,10 @@ const previewRow = document.getElementById("previewRow");
 const imageCountLabel = document.getElementById("imageCountLabel");
 const categoryList = document.getElementById("categoryList");
 
+const colorVariantRows = document.getElementById("colorVariantRows");
+const addColorVariantBtn = document.getElementById("addColorVariantBtn");
+let colorVariants = []; // { name, file: File|null, existingUrl: string|null }
+
 const returnPolicySelect = document.getElementById("returnPolicy");
 const returnPolicyCustom = document.getElementById("returnPolicyCustom");
 const warrantySelect = document.getElementById("warranty");
@@ -150,6 +154,8 @@ function resetForm() {
   selectedFiles = [];
   imageFile.value = "";
   if (imageCountLabel) imageCountLabel.textContent = `0/${MAX_IMAGES}`;
+  colorVariants = [];
+  renderColorVariantRows();
   editMode = false;
   editProductId = null;
   productFormTitle.textContent = "Add Product";
@@ -167,6 +173,83 @@ if (productFormCloseBtn) {
   productFormCloseBtn.addEventListener("click", () => {
     closeModal("productFormModal");
   });
+}
+
+
+/* =========================
+   COLOR VARIANTS — each is a name + its own photo
+========================= */
+
+function renderColorVariantRows() {
+
+  colorVariantRows.innerHTML = colorVariants.map((v, i) => `
+    <div class="bf-color-variant-row" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <img src="${v.file ? URL.createObjectURL(v.file) : (v.existingUrl || "")}" alt=""
+        style="width:44px;height:44px;border-radius:8px;object-fit:cover;background:var(--paper-dim);flex-shrink:0;${(v.file || v.existingUrl) ? "" : "display:none;"}">
+      <input type="text" class="bf-input" placeholder="Color name (e.g. Red)" value="${v.name || ""}" data-variant-name="${i}" style="flex:1;">
+      <input type="file" accept="image/*" data-variant-file="${i}" style="width:120px;">
+      <button type="button" class="bf-btn bf-btn-ghost bf-btn-sm" data-variant-remove="${i}" aria-label="Remove">✕</button>
+    </div>
+  `).join("");
+
+}
+
+if (addColorVariantBtn) {
+  addColorVariantBtn.addEventListener("click", () => {
+    colorVariants.push({ name: "", file: null, existingUrl: null });
+    renderColorVariantRows();
+  });
+}
+
+if (colorVariantRows) {
+  colorVariantRows.addEventListener("input", (e) => {
+    const nameIdx = e.target.dataset.variantName;
+    if (nameIdx !== undefined) colorVariants[Number(nameIdx)].name = e.target.value;
+  });
+
+  colorVariantRows.addEventListener("change", (e) => {
+    const fileIdx = e.target.dataset.variantFile;
+    if (fileIdx !== undefined && e.target.files[0]) {
+      colorVariants[Number(fileIdx)].file = e.target.files[0];
+      renderColorVariantRows();
+    }
+  });
+
+  colorVariantRows.addEventListener("click", (e) => {
+    const removeBtn = e.target.closest("[data-variant-remove]");
+    if (removeBtn) {
+      colorVariants.splice(Number(removeBtn.dataset.variantRemove), 1);
+      renderColorVariantRows();
+    }
+  });
+}
+
+async function uploadColorVariants() {
+
+  const result = [];
+
+  for (const v of colorVariants) {
+
+    const name = (v.name || "").trim();
+    if (!name) continue; // skip blank rows
+
+    let imageUrl = v.existingUrl;
+
+    if (v.file) {
+      const formData = new FormData();
+      formData.append("file", v.file);
+      formData.append("upload_preset", "Bestifyimg");
+      const response = await fetch("https://api.cloudinary.com/v1_1/rgksliph/image/upload", { method: "POST", body: formData });
+      const data = await response.json();
+      imageUrl = data.secure_url;
+    }
+
+    if (imageUrl) result.push({ name, image: imageUrl });
+
+  }
+
+  return result;
+
 }
 
 
@@ -229,6 +312,8 @@ form.addEventListener("submit", async (e) => {
       return;
     }
 
+    const finalColorVariants = await uploadColorVariants();
+
     const productData = {
       image: imageUrls[0],
       images: imageUrls,
@@ -244,6 +329,7 @@ form.addEventListener("submit", async (e) => {
       colours: document.getElementById("colours").value
         ? document.getElementById("colours").value.split(",").map(s => s.trim()).filter(Boolean)
         : [],
+      colorVariants: finalColorVariants,
       returnPolicy: document.getElementById("returnPolicy").value === "Custom"
         ? (document.getElementById("returnPolicyCustom").value.trim() || "7 Days Return")
         : document.getElementById("returnPolicy").value,
@@ -498,6 +584,9 @@ async function editProduct(id) {
     document.getElementById("description").value = product.description || "";
     document.getElementById("sizes").value = (product.sizes || []).join(", ");
     document.getElementById("colours").value = (product.colours || []).join(", ");
+
+    colorVariants = (product.colorVariants || []).map(v => ({ name: v.name, file: null, existingUrl: v.image }));
+    renderColorVariantRows();
     document.getElementById("status").value = product.status === "Inactive" ? "Inactive" : "Active";
 
     const STANDARD_RETURN = ["7 Days Return", "No Return"];
