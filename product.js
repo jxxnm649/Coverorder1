@@ -24,6 +24,10 @@ import {
 
 const productDiv = document.getElementById("product");
 
+function escapeAttrPD(str) {
+  return String(str ?? "").replace(/"/g, "&quot;");
+}
+
 const params = new URLSearchParams(window.location.search);
 const productId = params.get("id");
 
@@ -206,6 +210,20 @@ async function loadProduct() {
     </div>
     ${hasDiscount ? `<div class="offer-tag">✓ UPI Offer applied for you!!</div>` : ""}
 
+    ${Array.isArray(product.colorVariants) && product.colorVariants.length > 0 ? `
+      <div class="variants-section">
+        <span class="variant-title">Colour: <strong id="pdColourName">${product.colorVariants[0].name}</strong></span>
+        <div class="color-options" id="pdColorOptions">
+          ${product.colorVariants.map((v, i) => `
+            <div class="color-card${i === 0 ? " active" : ""}" data-color-name="${escapeAttrPD(v.name)}" data-color-image="${escapeAttrPD(v.image)}">
+              <img src="${v.image}" class="color-img" alt="${escapeAttrPD(v.name)}">
+              <span class="color-name">${v.name}</span>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    ` : ""}
+
     ${product.warranty && product.warranty !== "No Warranty" ? `
       <div class="guarantee-box">
         ${ICONS.shield}
@@ -268,6 +286,21 @@ async function loadProduct() {
         document.getElementById("pdMainImage").src = box.dataset.src;
         document.querySelectorAll(".thumb-box").forEach(t => t.classList.remove("active"));
         box.classList.add("active");
+      });
+    }
+
+    /* Colour swatches — real per-colour photo, same product/price */
+    const colorOptionsEl = document.getElementById("pdColorOptions");
+    if (colorOptionsEl) {
+      colorOptionsEl.addEventListener("click", (e) => {
+        const card = e.target.closest(".color-card");
+        if (!card) return;
+
+        document.getElementById("pdMainImage").src = card.dataset.colorImage;
+        document.getElementById("pdColourName").textContent = card.dataset.colorName;
+
+        colorOptionsEl.querySelectorAll(".color-card").forEach(c => c.classList.remove("active"));
+        card.classList.add("active");
       });
     }
 
