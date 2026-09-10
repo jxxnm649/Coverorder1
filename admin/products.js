@@ -183,12 +183,14 @@ if (productFormCloseBtn) {
 function renderColorVariantRows() {
 
   colorVariantRows.innerHTML = colorVariants.map((v, i) => `
-    <div class="bf-color-variant-row" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-      <img src="${v.file ? URL.createObjectURL(v.file) : (v.existingUrl || "")}" alt=""
-        style="width:44px;height:44px;border-radius:8px;object-fit:cover;background:var(--paper-dim);flex-shrink:0;${(v.file || v.existingUrl) ? "" : "display:none;"}">
-      <input type="text" class="bf-input" placeholder="Color name (e.g. Red)" value="${v.name || ""}" data-variant-name="${i}" style="flex:1;">
-      <input type="file" accept="image/*" data-variant-file="${i}" style="width:120px;">
-      <button type="button" class="bf-btn bf-btn-ghost bf-btn-sm" data-variant-remove="${i}" aria-label="Remove">✕</button>
+    <div class="bf-color-variant-row" style="display:flex;flex-direction:column;gap:8px;padding:10px;border:1px solid var(--line);border-radius:10px;margin-bottom:10px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <img src="${v.file ? URL.createObjectURL(v.file) : (v.existingUrl || "")}" alt=""
+          style="width:44px;height:44px;border-radius:8px;object-fit:cover;background:var(--paper-dim);flex-shrink:0;${(v.file || v.existingUrl) ? "" : "display:none;"}">
+        <input type="text" class="bf-input" placeholder="Color name (e.g. Red)" value="${v.name || ""}" data-variant-name="${i}" style="flex:1;min-width:0;">
+        <button type="button" class="bf-btn bf-btn-ghost bf-btn-sm" data-variant-remove="${i}" aria-label="Remove row" style="flex-shrink:0;">✕</button>
+      </div>
+      <input type="file" accept="image/*" data-variant-file="${i}" style="width:100%;">
     </div>
   `).join("");
 
@@ -236,9 +238,11 @@ if (colorVariantRows) {
 async function uploadColorVariants() {
 
   const result = [];
+  let rowNumber = 0;
 
   for (const v of colorVariants) {
 
+    rowNumber++;
     const name = (v.name || "").trim();
     if (!name && !v.file && !v.existingUrl) continue; // fully blank row — skip quietly
 
@@ -254,7 +258,7 @@ async function uploadColorVariants() {
     }
 
     if (!name || !imageUrl) {
-      throw new Error(`Color variant "${name || "(unnamed)"}" is missing a ${!name ? "name" : "photo"} — fill it in or remove that row.`);
+      throw new Error(`Color row ${rowNumber} (${name || "no name yet"}) is missing a ${!name ? "name" : "photo"} — fill it in or tap ✕ to remove that row.`);
     }
 
     result.push({ name, image: imageUrl });
