@@ -12,7 +12,10 @@ import {
   updateDoc,
   increment,
   collection,
-  getDocs
+  getDocs,
+  query,
+  where,
+  limit
 } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
 const productMain = document.getElementById("productMain");
@@ -78,6 +81,7 @@ async function loadProduct() {
 
     render();
     await checkLikedStatus();
+    loadRelatedProducts();
 
   } catch (error) {
     console.error(error);
@@ -87,6 +91,55 @@ async function loadProduct() {
         <button type="button" class="btn btn-buy" id="retryBtn" style="margin-top:12px;">Retry</button>
       </div>`;
     document.getElementById("retryBtn")?.addEventListener("click", loadProduct);
+  }
+
+}
+
+async function loadRelatedProducts() {
+
+  const relatedSection = document.getElementById("relatedSection");
+  if (!relatedSection || !product.category) return;
+
+  try {
+
+    const q = query(
+      collection(db, "products"),
+      where("category", "==", product.category),
+      limit(5)
+    );
+
+    const snap = await getDocs(q);
+
+    const related = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .filter(p => p.id !== product.id)
+      .slice(0, 4);
+
+    if (related.length === 0) return;
+
+    relatedSection.innerHTML = `
+      <h2 style="font-size:18px;font-weight:800;color:#111827;margin:24px 0 14px;">ಸಂಬಂಧಿತ ಉತ್ಪನ್ನಗಳು (Related Products)</h2>
+      <div class="related-grid">
+        ${related.map(p => {
+          const price = Number(p.price) || 0;
+          const mrp = Number(p.mrp) || 0;
+          const hasDiscount = mrp > price;
+          return `
+            <a href="product.html?id=${p.id}" class="related-card">
+              <div class="related-card-img"><img src="${escapeHtml(p.image || "")}" alt="${escapeHtml(p.productName)}"></div>
+              <div class="related-card-title">${escapeHtml(p.productName)}</div>
+              <div class="related-card-price">
+                ₹${price}
+                ${hasDiscount ? `<span class="related-card-mrp">₹${mrp}</span>` : ""}
+              </div>
+            </a>
+          `;
+        }).join("")}
+      </div>
+    `;
+
+  } catch (error) {
+    console.error("Related products error:", error);
   }
 
 }
