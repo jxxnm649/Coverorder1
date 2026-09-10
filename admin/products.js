@@ -183,13 +183,17 @@ if (productFormCloseBtn) {
 function renderColorVariantRows() {
 
   colorVariantRows.innerHTML = colorVariants.map((v, i) => `
-    <div class="bf-color-variant-row" style="display:flex;flex-direction:column;gap:8px;padding:10px;border:1px solid var(--line);border-radius:10px;margin-bottom:10px;">
-      <div style="display:flex;align-items:center;gap:10px;">
+    <div class="bf-color-variant-row" style="border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;position:relative;">
+      <button type="button" class="bf-btn bf-btn-ghost bf-btn-sm" data-variant-remove="${i}" aria-label="Remove row" style="position:absolute;top:8px;right:8px;width:auto;">✕ Remove</button>
+
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-right:80px;">
         <img src="${v.file ? URL.createObjectURL(v.file) : (v.existingUrl || "")}" alt=""
           style="width:44px;height:44px;border-radius:8px;object-fit:cover;background:var(--paper-dim);flex-shrink:0;${(v.file || v.existingUrl) ? "" : "display:none;"}">
-        <input type="text" class="bf-input" placeholder="Color name (e.g. Red)" value="${v.name || ""}" data-variant-name="${i}" style="flex:1;min-width:0;">
-        <button type="button" class="bf-btn bf-btn-ghost bf-btn-sm" data-variant-remove="${i}" aria-label="Remove row" style="flex-shrink:0;">✕</button>
+        <span style="font-size:12px;color:var(--ink-soft);">Color ${i + 1}</span>
       </div>
+
+      <input type="text" class="bf-input" placeholder="Color name (e.g. Red)" value="${v.name || ""}" data-variant-name="${i}" style="margin-bottom:8px;">
+
       <input type="file" accept="image/*" data-variant-file="${i}" style="width:100%;">
     </div>
   `).join("");
