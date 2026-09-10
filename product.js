@@ -130,15 +130,18 @@ function render() {
         <div class="variants-section">
           <span class="variant-title">ಬಣ್ಣವನ್ನು ಆಯ್ಕೆ ಮಾಡಿ: <strong id="colorName">${escapeHtml(product.colorVariants[0].name)}</strong></span>
           <div class="color-options" id="colorOptions">
-            ${product.colorVariants.map((v, i) => `
+            ${product.colorVariants.map((v, i) => {
+              const thumb = (Array.isArray(v.images) && v.images[0]) || v.image || "";
+              return `
               <div>
                 <input type="radio" name="color" id="color-${i}" class="color-radio" ${i === 0 ? "checked" : ""} value="${escapeHtml(v.name)}" data-index="${i}">
                 <label for="color-${i}" class="color-card">
-                  <img src="${escapeHtml(v.image)}" class="color-img" alt="${escapeHtml(v.name)}">
+                  <img src="${escapeHtml(thumb)}" class="color-img" alt="${escapeHtml(v.name)}">
                   <span class="color-name">${escapeHtml(v.name)}</span>
                 </label>
               </div>
-            `).join("")}
+            `;
+            }).join("")}
           </div>
         </div>
       ` : ""}
@@ -213,7 +216,9 @@ function attachEvents(outOfStock) {
   /* Like */
   document.getElementById("likeBtn")?.addEventListener("click", toggleLike);
 
-  /* Colour swatches — switches the gallery to that colour's own photo */
+  /* Colour swatches — switches the gallery to that colour's own photos
+     (reuses the exact same gallery/thumbnail code as the base product,
+     instead of a separate single-image swap that was more fragile). */
   const colorOptions = document.getElementById("colorOptions");
   if (colorOptions) {
     colorOptions.addEventListener("change", (e) => {
@@ -223,9 +228,15 @@ function attachEvents(outOfStock) {
       const variant = product.colorVariants[Number(radio.dataset.index)];
       document.getElementById("colorName").textContent = variant.name;
 
-      currentImages = [variant.image];
+      const variantImages = (Array.isArray(variant.images) && variant.images.length)
+        ? variant.images
+        : [variant.image].filter(Boolean);
+
+      if (!variantImages.length) return; // nothing to show — leave the gallery as-is
+
+      currentImages = variantImages;
       currentImageIndex = 0;
-      document.getElementById("mainImg").src = variant.image;
+      document.getElementById("mainImg").src = currentImages[0];
       renderThumbnails();
     });
   }
