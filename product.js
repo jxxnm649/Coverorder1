@@ -26,6 +26,7 @@ let product = null;
 let userHasLiked = false;
 
 let currentImages = [];   // the gallery currently shown (product images, or a colour's own image)
+let allColorOptions = []; // [{name, images}] — base product photos + real colour variants, in swatch order
 let currentImageIndex = 0;
 
 function escapeHtml(str) {
@@ -102,6 +103,14 @@ function render() {
 
   const hasVariants = Array.isArray(product.colorVariants) && product.colorVariants.length > 0;
 
+  // The product's own base photos need to be selectable too — otherwise,
+  // once a customer switches to a colour variant, there's no way back to
+  // what they originally opened. It's always option 0.
+  const baseLabel = (Array.isArray(product.colours) && product.colours[0]) || "Default";
+  allColorOptions = hasVariants
+    ? [{ name: baseLabel, images: currentImages.slice() }, ...product.colorVariants]
+    : [];
+
   productMain.innerHTML = `
 
     <div class="product-gallery">
@@ -128,9 +137,9 @@ function render() {
 
       ${hasVariants ? `
         <div class="variants-section">
-          <span class="variant-title">ಬಣ್ಣವನ್ನು ಆಯ್ಕೆ ಮಾಡಿ: <strong id="colorName">${escapeHtml(product.colorVariants[0].name)}</strong></span>
+          <span class="variant-title">ಬಣ್ಣವನ್ನು ಆಯ್ಕೆ ಮಾಡಿ: <strong id="colorName">${escapeHtml(allColorOptions[0].name)}</strong></span>
           <div class="color-options" id="colorOptions">
-            ${product.colorVariants.map((v, i) => {
+            ${allColorOptions.map((v, i) => {
               const thumb = (Array.isArray(v.images) && v.images[0]) || v.image || "";
               return `
               <div>
@@ -225,7 +234,7 @@ function attachEvents(outOfStock) {
       const radio = e.target.closest(".color-radio");
       if (!radio) return;
 
-      const variant = product.colorVariants[Number(radio.dataset.index)];
+      const variant = allColorOptions[Number(radio.dataset.index)];
       document.getElementById("colorName").textContent = variant.name;
 
       const variantImages = (Array.isArray(variant.images) && variant.images.length)
