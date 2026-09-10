@@ -38,7 +38,7 @@ const categoryList = document.getElementById("categoryList");
 
 const colorVariantRows = document.getElementById("colorVariantRows");
 const addColorVariantBtn = document.getElementById("addColorVariantBtn");
-let colorVariants = []; // { name, file: File|null, existingUrl: string|null }
+let colorVariants = []; // { name, files: File[], existingImages: string[] }
 
 const returnPolicySelect = document.getElementById("returnPolicy");
 const returnPolicyCustom = document.getElementById("returnPolicyCustom");
@@ -182,27 +182,48 @@ if (productFormCloseBtn) {
 
 function renderColorVariantRows() {
 
-  colorVariantRows.innerHTML = colorVariants.map((v, i) => `
+  colorVariantRows.innerHTML = colorVariants.map((v, i) => {
+
+    const previewUrls = [
+      ...(v.existingImages || []),
+      ...(v.files || []).map(f => URL.createObjectURL(f))
+    ];
+
+    return `
     <div class="bf-color-variant-row" style="border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;position:relative;">
       <button type="button" class="bf-btn bf-btn-ghost bf-btn-sm" data-variant-remove="${i}" aria-label="Remove row" style="position:absolute;top:8px;right:8px;width:auto;">✕ Remove</button>
 
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-right:80px;">
-        <img src="${v.file ? URL.createObjectURL(v.file) : (v.existingUrl || "")}" alt=""
-          style="width:44px;height:44px;border-radius:8px;object-fit:cover;background:var(--paper-dim);flex-shrink:0;${(v.file || v.existingUrl) ? "" : "display:none;"}">
+      <div style="padding-right:80px;margin-bottom:8px;">
         <span style="font-size:12px;color:var(--ink-soft);">Color ${i + 1}</span>
       </div>
 
       <input type="text" class="bf-input" placeholder="Color name (e.g. Red)" value="${v.name || ""}" data-variant-name="${i}" style="margin-bottom:8px;">
 
-      <input type="file" accept="image/*" data-variant-file="${i}" style="width:100%;">
+      ${previewUrls.length ? `
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+          ${previewUrls.map((url, photoIdx) => `
+            <div style="position:relative;">
+              <img src="${url}" alt="" style="width:56px;height:56px;border-radius:8px;object-fit:cover;background:var(--paper-dim);">
+              <button type="button" data-variant-photo-remove="${i}:${photoIdx}" aria-label="Remove photo"
+                style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--bf-danger,#c0392b);color:#fff;border:none;font-size:11px;line-height:1;cursor:pointer;">✕</button>
+            </div>
+          `).join("")}
+        </div>
+      ` : ""}
+
+      <label class="bf-btn bf-btn-ghost bf-btn-sm" style="display:inline-block;width:auto;cursor:pointer;">
+        + Add Photos (multiple angles)
+        <input type="file" accept="image/*" multiple data-variant-file="${i}" style="display:none;">
+      </label>
     </div>
-  `).join("");
+  `;
+  }).join("");
 
 }
 
 if (addColorVariantBtn) {
   addColorVariantBtn.addEventListener("click", () => {
-    colorVariants.push({ name: "", file: null, existingUrl: null });
+    colorVariants.push({ name: "", files: [], existingImages: [] });
     renderColorVariantRows();
   });
 }
@@ -215,7 +236,7 @@ if (colorVariantRows) {
 
   // Pressing Enter/Done on a mobile keyboard inside a form field submits
   // the whole form by default — that was silently saving the product
-  // with an empty colorVariants row before the photo was even picked.
+  // with an empty colorVariants row before the photos were even picked.
   colorVariantRows.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && e.target.dataset.variantName !== undefined) {
       e.preventDefault();
@@ -224,18 +245,36 @@ if (colorVariantRows) {
 
   colorVariantRows.addEventListener("change", (e) => {
     const fileIdx = e.target.dataset.variantFile;
-    if (fileIdx !== undefined && e.target.files[0]) {
-      colorVariants[Number(fileIdx)].file = e.target.files[0];
+    if (fileIdx !== undefined && e.target.files.length) {
+      const v = colorVariants[Number(fileIdx)];
+      v.files = [...(v.files || []), ...Array.from(e.target.files)];
       renderColorVariantRows();
     }
   });
 
   colorVariantRows.addEventListener("click", (e) => {
+
     const removeBtn = e.target.closest("[data-variant-remove]");
     if (removeBtn) {
       colorVariants.splice(Number(removeBtn.dataset.variantRemove), 1);
       renderColorVariantRows();
+      return;
     }
+
+    const photoRemoveBtn = e.target.closest("[data-variant-photo-remove]");
+    if (photoRemoveBtn) {
+      const [variantIdx, photoIdx] = photoRemoveBtn.dataset.variantPhotoRemove.split(":").map(Number);
+      const v = colorVariants[variantIdx];
+      const existingCount = (v.existingImages || []).length;
+
+      if (photoIdx < existingCount) {
+        v.existingImages.splice(photoIdx, 1);
+      } else {
+        v.files.splice(photoIdx - existingCount, 1);
+      }
+      renderColorVariantRows();
+    }
+
   });
 }
 
@@ -248,24 +287,25 @@ async function uploadColorVariants() {
 
     rowNumber++;
     const name = (v.name || "").trim();
-    if (!name && !v.file && !v.existingUrl) continue; // fully blank row — skip quietly
+    const hasAnyPhoto = (v.existingImages && v.existingImages.length) || (v.files && v.files.length);
+    if (!name && !hasAnyPhoto) continue; // fully blank row — skip quietly
 
-    let imageUrl = v.existingUrl;
+    const images = [...(v.existingImages || [])];
 
-    if (v.file) {
+    for (const file of (v.files || [])) {
       const formData = new FormData();
-      formData.append("file", v.file);
+      formData.append("file", file);
       formData.append("upload_preset", "Bestifyimg");
       const response = await fetch("https://api.cloudinary.com/v1_1/rgksliph/image/upload", { method: "POST", body: formData });
       const data = await response.json();
-      imageUrl = data.secure_url;
+      if (data.secure_url) images.push(data.secure_url);
     }
 
-    if (!name || !imageUrl) {
+    if (!name || images.length === 0) {
       throw new Error(`Color row ${rowNumber} (${name || "no name yet"}) is missing a ${!name ? "name" : "photo"} — fill it in or tap ✕ to remove that row.`);
     }
 
-    result.push({ name, image: imageUrl });
+    result.push({ name, image: images[0], images });
 
   }
 
@@ -606,7 +646,11 @@ async function editProduct(id) {
     document.getElementById("sizes").value = (product.sizes || []).join(", ");
     document.getElementById("colours").value = (product.colours || []).join(", ");
 
-    colorVariants = (product.colorVariants || []).map(v => ({ name: v.name, file: null, existingUrl: v.image }));
+    colorVariants = (product.colorVariants || []).map(v => ({
+      name: v.name,
+      files: [],
+      existingImages: Array.isArray(v.images) && v.images.length ? v.images : [v.image].filter(Boolean)
+    }));
     renderColorVariantRows();
     document.getElementById("status").value = product.status === "Inactive" ? "Inactive" : "Active";
 
