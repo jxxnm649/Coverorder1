@@ -207,6 +207,15 @@ if (colorVariantRows) {
     if (nameIdx !== undefined) colorVariants[Number(nameIdx)].name = e.target.value;
   });
 
+  // Pressing Enter/Done on a mobile keyboard inside a form field submits
+  // the whole form by default — that was silently saving the product
+  // with an empty colorVariants row before the photo was even picked.
+  colorVariantRows.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && e.target.dataset.variantName !== undefined) {
+      e.preventDefault();
+    }
+  });
+
   colorVariantRows.addEventListener("change", (e) => {
     const fileIdx = e.target.dataset.variantFile;
     if (fileIdx !== undefined && e.target.files[0]) {
@@ -231,7 +240,7 @@ async function uploadColorVariants() {
   for (const v of colorVariants) {
 
     const name = (v.name || "").trim();
-    if (!name) continue; // skip blank rows
+    if (!name && !v.file && !v.existingUrl) continue; // fully blank row — skip quietly
 
     let imageUrl = v.existingUrl;
 
@@ -244,7 +253,11 @@ async function uploadColorVariants() {
       imageUrl = data.secure_url;
     }
 
-    if (imageUrl) result.push({ name, image: imageUrl });
+    if (!name || !imageUrl) {
+      throw new Error(`Color variant "${name || "(unnamed)"}" is missing a ${!name ? "name" : "photo"} — fill it in or remove that row.`);
+    }
+
+    result.push({ name, image: imageUrl });
 
   }
 
